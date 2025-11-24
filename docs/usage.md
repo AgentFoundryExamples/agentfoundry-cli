@@ -458,23 +458,23 @@ that teams will love"
 vision: "Create an intuitive tool
 that empowers collaboration"
 
-# Core features
+# Core features (using newline-separated style - commas optional)
 must: [
-    "User authentication",       # Login system
-    "Task creation and editing", # CRUD operations
+    "User authentication"        # Login system
+    "Task creation and editing"  # CRUD operations
     "Data persistence"           # Database
 ]
 
-# Avoid these
+# Avoid these (using comma-separated style)
 dont: [
     "Skip input validation",
     "Ignore security"
 ]
 
-# Future enhancements
+# Future enhancements (trailing comma OK)
 nice: [
     "Dark mode support",
-    "Mobile responsive design"
+    "Mobile responsive design",
 ]
 ```
 - Optional nice-to-have features

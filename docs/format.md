@@ -94,13 +94,31 @@ must: ["Complete authentication", "Implement data persistence", "Add error handl
 
 #### Multiline Lists
 
-Lists can be formatted across multiple lines with items on separate lines:
+Lists can be formatted across multiple lines. **When items are on separate lines, commas between items are optional**:
 
 ```
+# With commas (traditional style)
 must: [
     "Complete authentication",
     "Implement data persistence",
     "Add error handling"
+]
+
+# Without commas (newline-separated style)
+must: [
+    "Complete authentication"
+    "Implement data persistence"
+    "Add error handling"
+]
+```
+
+Both formats are valid and produce the same result. You can even mix styles:
+
+```
+must: [
+    "Authentication",       # With comma
+    "Data persistence"      # Without comma (newline-separated)
+    "Error handling",       # Mixed is fine
 ]
 ```
 
@@ -110,13 +128,26 @@ Lists can use single or double quotes for items:
 dont: ['Skip tests', "Ignore security", 'Forget documentation']
 ```
 
-Trailing commas are allowed:
+Trailing commas are allowed (optional before closing bracket):
 
 ```
 nice: [
     "Dark mode",
     "Mobile support",
 ]
+```
+
+**Note**: Items on the *same line* must be separated by commas. Commas are only optional when items are on separate lines:
+
+```
+# Valid - items on separate lines, no commas needed
+must: [
+    "Item 1"
+    "Item 2"
+]
+
+# Invalid - items on same line require commas
+must: ["Item 1" "Item 2"]  # This will cause an error!
 ```
 
 Comments can appear within multiline lists:
@@ -146,25 +177,25 @@ must   :["Item 1",  "Item 2"]
 purpose: "Build a comprehensive task management system"
 vision: "Create an intuitive and powerful tool for tracking team tasks"
 
-# Required features
+# Required features (using newline-separated style - no commas needed)
 must: [
-    "User authentication",       # Login system
-    "Task creation and editing", # Core functionality
+    "User authentication"        # Login system
+    "Task creation and editing"  # Core functionality
     "Data persistence"           # Save to database
 ]
 
-# Things to avoid
+# Things to avoid (using comma-separated style)
 dont: [
     "Skip input validation",
     "Ignore security best practices",
     "Forget error handling"
 ]
 
-# Nice to have features
+# Nice to have features (with trailing comma)
 nice: [
     "Dark mode support",
     "Mobile responsive design",
-    "Real-time updates"
+    "Real-time updates",
 ]
 ```
 
