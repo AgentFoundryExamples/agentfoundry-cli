@@ -1642,3 +1642,65 @@ nice: ["Test"]
     # Should include caret indicator
     assert "^" in error_msg
     assert "colon" in error_msg.lower() or "expected" in error_msg.lower()
+
+
+def test_comment_before_string_value():
+    """Test that comments before string values are ignored (P1 fix)."""
+    content = """
+purpose: # This is a comment
+"Build a task manager"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['purpose'] == "Build a task manager"
+
+
+def test_comment_before_list_value():
+    """Test that comments before list values are ignored (P1 fix)."""
+    content = """
+purpose: "Test"
+vision: "Test"
+must: # Comment before list
+["Item 1", "Item 2"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['must'] == ["Item 1", "Item 2"]
+
+
+def test_newline_before_value():
+    """Test that newlines before values are ignored."""
+    content = """
+purpose:
+"Build a task manager"
+vision: "Test"
+must:
+["Item 1"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['purpose'] == "Build a task manager"
+    assert result['must'] == ["Item 1"]
+
+
+def test_multiple_comments_before_value():
+    """Test that multiple comments/newlines before values are ignored."""
+    content = """
+purpose: # Comment 1
+# Comment 2
+"Build a task manager"
+vision: "Test"
+must: # Comment
+# Another comment
+["Item 1", "Item 2"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['purpose'] == "Build a task manager"
+    assert result['must'] == ["Item 1", "Item 2"]

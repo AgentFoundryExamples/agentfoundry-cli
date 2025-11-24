@@ -715,6 +715,9 @@ class Parser:
     
     def _parse_string_value(self) -> str:
         """Parse a string value (for purpose/vision)."""
+        # Skip any comments/newlines after the colon
+        self.skip_newlines_and_comments()
+        
         token = self.peek()
         
         if not token or token.type != TokenType.STRING:
@@ -752,6 +755,9 @@ class Parser:
     
     def _parse_list_value(self) -> List[str]:
         """Parse a list value (for must/dont/nice)."""
+        # Skip any comments/newlines after the colon
+        self.skip_newlines_and_comments()
+        
         # Expect opening bracket
         bracket_token = self.peek()
         if not bracket_token or bracket_token.type != TokenType.LBRACKET:
