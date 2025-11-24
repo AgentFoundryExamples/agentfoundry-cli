@@ -44,15 +44,110 @@ agentfoundry-cli/
 ├── agentfoundry_cli/      # Main package directory
 │   ├── __init__.py        # Package initialization and metadata
 │   ├── __main__.py        # Entry point for 'python -m agentfoundry_cli'
-│   └── cli.py             # Main CLI application and commands
+│   ├── cli.py             # Main CLI application and commands
+│   └── parser.py          # Tokenizer-driven .af file parser
 ├── tests/                 # Test directory
-│   └── __init__.py        # Test package initialization
+│   ├── __init__.py        # Test package initialization
+│   ├── test_cli.py        # CLI command tests
+│   ├── test_cli_run.py    # Run command integration tests
+│   └── test_parser.py     # Parser and tokenizer tests
 ├── docs/                  # Documentation
-│   └── development.md     # This file
+│   ├── development.md     # This file
+│   ├── format.md          # .af file format specification
+│   └── usage.md           # Usage guide
 ├── pyproject.toml         # Project metadata and dependencies
 ├── README.md              # User-facing documentation
 └── LICENSE                # GPLv3 License
 ```
+
+## Parser Architecture
+
+### Overview
+
+The .af file parser uses a **tokenizer-driven state machine** architecture for robust handling of UTF-8 input, size validation, and backwards-compatible v1.0 syntax.
+
+### Architecture Components
+
+#### 1. Tokenizer (`Tokenizer` class)
+
+The tokenizer performs character-by-character scanning of input and emits tokens with precise position tracking:
+
+**Token Types:**
+- `KEY` - Identifier before colon (e.g., `purpose`, `vision`)
+- `COLON` - The `:` separator
+- `STRING` - Quoted string values (single or double quotes)
+- `LBRACKET` / `RBRACKET` - List delimiters `[` and `]`
+- `COMMA` - List item separator `,`
+- `COMMENT` - Comments from `#` to end of line
+- `NEWLINE` - Line breaks (`\n` or `\r\n`)
+- `EOF` - End of file marker
+
+**Features:**
+- Character-by-character scanning with lookahead
+- Line and column position tracking for each token
+- Escape sequence handling (`\"`, `\'`, `\\`, `\n`, `\t`)
+- UTF-8 support including emojis and combining characters
+
+#### 2. State Machine Parser (`Parser` class)
+
+The parser consumes tokens from the tokenizer to build the flat `.af` structure:
+
+**Parsing States:**
+- Skip comments and newlines
+- Parse key-value pairs
+- Validate key names against required set
+- Check for duplicate keys
+- Parse string values (for `purpose`, `vision`)
+- Parse list values (for `must`, `dont`, `nice`)
+
+**Validation:**
+- All required keys present
+- No duplicate keys (case-insensitive)
+- No unknown keys
+- String values are quoted and non-empty
+- List values are bracketed and non-empty
+- Maintains canonical key order
+
+#### 3. Input Loading (`load_input` function)
+
+Centralized input loading with strict validation:
+
+**Size Limits:**
+- Maximum input size: 1MB (1,048,576 bytes)
+- Files checked before reading
+- Streams checked during reading
+- Clear error messages on rejection
+
+**Encoding:**
+- UTF-8 required
+- BOM automatically stripped if present
+- UnicodeDecodeError caught and reported
+
+### Design Guarantees
+
+1. **Deterministic**: Same input always produces same output
+2. **Position Tracking**: Every error includes line and column numbers
+3. **Size Safety**: 1MB limit prevents resource exhaustion
+4. **No Eval/Exec**: Pure parsing, no code execution
+5. **Fixed Output Shape**: Always produces the same 5 keys in canonical order
+
+### Error Reporting
+
+Errors include precise location information:
+```
+File 'example.af', line 5, column 12: Unknown key 'invalid'
+```
+
+This enables developers to quickly locate and fix issues.
+
+### Backwards Compatibility
+
+The tokenizer/parser maintains full v1.0 compatibility:
+- Single-line key-value syntax
+- Quoted strings (single or double quotes)
+- Bracketed lists with comma-separated quoted items
+- Comments starting with `#`
+- Case-insensitive keys normalized to lowercase
 
 ## Running the CLI
 
@@ -81,7 +176,7 @@ python agentfoundry_cli/cli.py --help
 
 ## Testing
 
-The project has comprehensive test coverage with 76+ tests covering all core functionality.
+The project has comprehensive test coverage with 92+ tests covering all core functionality.
 
 ### Running Tests
 
@@ -116,10 +211,13 @@ pytest -k "test_run_command"
 
 Current test suite includes:
 - **CLI commands**: Testing all CLI commands (run, version, help, hello)
-- **Parser validation**: Testing `.af` file parsing logic
-- **Error handling**: Testing all error scenarios with proper messages
+- **Parser validation**: Testing `.af` file parsing logic with tokenizer
+- **Tokenizer**: Token generation, position tracking, escape sequences
+- **UTF-8 support**: Emojis, combining characters, BOM handling
+- **Size limits**: 1MB enforcement for files and stdin
+- **Error handling**: Testing all error scenarios with precise messages
 - **Integration tests**: End-to-end workflow validation
-- **Edge cases**: Large files, different encodings, line endings
+- **Edge cases**: Empty files, large files, different encodings, line endings
 
 ### Writing Tests
 

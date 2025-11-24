@@ -65,10 +65,12 @@ af run path/to/file.af
 The `af run` command:
 
 1. **Validates Extension** - Ensures the file has a `.af` extension (case-insensitive)
-2. **Parses Content** - Reads and parses the file according to the `.af` format specification
-3. **Validates Structure** - Checks that all required keys are present and properly formatted
-4. **Outputs JSON** - Emits canonical JSON with deterministic key ordering to stdout
-5. **Reports Errors** - Provides detailed error messages with filenames and line numbers to stderr
+2. **Checks Size** - Rejects files ≥ 1 MB before parsing
+3. **Validates Encoding** - Ensures UTF-8 encoding, strips BOM if present
+4. **Parses Content** - Tokenizes and parses using state machine
+5. **Validates Structure** - Checks that all required keys are present and properly formatted
+6. **Outputs JSON** - Emits canonical JSON with deterministic key ordering to stdout
+7. **Reports Errors** - Provides detailed error messages with filenames, line numbers, and column positions to stderr
 
 ### Example
 
@@ -173,6 +175,24 @@ $ af run duplicate.af
 Error: File 'duplicate.af', line 5: Duplicate key 'purpose' (first seen on line 2)
 ```
 
+#### File Too Large
+```bash
+$ af run huge.af
+Error: File 'huge.af': Input file too large: 1048580 bytes (maximum: 1048576 bytes)
+```
+
+#### Invalid UTF-8 Encoding
+```bash
+$ af run bad-encoding.af
+Error: File 'bad-encoding.af': File must be UTF-8 encoded: ...
+```
+
+#### Empty File
+```bash
+$ af run empty.af
+Error: File 'empty.af', line 1: Missing required keys: dont, must, nice, purpose, vision
+```
+
 ## Workflow Examples
 
 ### Basic Validation
@@ -239,16 +259,52 @@ done
 
 ## Advanced Usage
 
+### Reading from stdin
+
+The parser supports reading from stdin, enabling pipeline workflows:
+
+**Note:** The current `af run` command requires a file path. To use stdin support programmatically:
+
+```python
+from agentfoundry_cli.parser import parse_af_stdin
+
+result = parse_af_stdin()
+```
+
+**stdin Guarantees:**
+- Same 1 MB size limit as files
+- Same UTF-8 encoding requirement
+- Same BOM stripping behavior
+- Same validation and error reporting
+
+**Example use case:**
+```bash
+# Generate .af content dynamically and parse it
+echo 'purpose: "Test"
+vision: "Test"
+must: ["Item"]
+dont: ["Item"]
+nice: ["Item"]' | python -c "
+from agentfoundry_cli.parser import parse_af_stdin
+import json
+result = parse_af_stdin()
+print(json.dumps(result, indent=2))
+"
+```
+
 ### Handling Large Files
 
-The `af run` command handles files with large lists efficiently:
+The `af run` command processes files efficiently up to the 1 MB limit:
 
 ```bash
-# File with hundreds of must/dont/nice items
+# File with hundreds of must/dont/nice items (but under 1 MB)
 af run large-project.af
 ```
 
-There's no practical limit on list sizes.
+**Limits:**
+- Maximum file size: 1 MB (1,048,576 bytes)
+- No practical limit on number of list items (within the size limit)
+- Parsing is fast (typically < 100ms)
 
 ### Line Ending Compatibility
 
@@ -259,12 +315,59 @@ The parser handles different line endings:
 
 Files with any line ending format will parse correctly.
 
-### UTF-8 Support
+### UTF-8 Support and Requirements
 
-The parser:
-- Expects UTF-8 encoding
-- Handles UTF-8 BOM automatically
-- Supports Unicode characters in string values
+The parser has strict UTF-8 requirements with robust support:
+
+**Required:**
+- All `.af` files **must** be UTF-8 encoded
+- Files with other encodings (e.g., Latin-1, Windows-1252) will be rejected with a clear error
+
+**Automatic Handling:**
+- UTF-8 BOM (Byte Order Mark) is automatically detected and stripped
+- Works correctly even if BOM appears at the start of the file
+
+**Full Unicode Support:**
+- Emojis: `"Deploy the app 🚀"`
+- Accented characters: `"Café système with naïve approach"`
+- Asian scripts: `"Support 日本語 中文 한글"`
+- Mathematical symbols: `"Test α β γ"`
+- Arabic/RTL: `"مرحبا العالم"`
+
+**Example:**
+```af
+purpose: "Build an app 🚀 with café ☕"
+vision: "Support 日本語 and other languages"
+must: ["Handle UTF-8 properly", "Support emojis 😊"]
+dont: ["Assume ASCII only"]
+nice: ["Add ñ ü ö support"]
+```
+
+### Input Size Limits
+
+To prevent resource exhaustion, the parser enforces strict size limits:
+
+**Size Limit:** 1 MB (1,048,576 bytes)
+
+**Behavior:**
+- Files **below** 1 MB: Parsed successfully
+- Files **at or above** 1 MB: Rejected with clear error before parsing
+- Applies to both file input and stdin
+
+**Error Message:**
+```
+Error: Input file too large: 1048580 bytes (maximum: 1048576 bytes)
+```
+
+**Best Practices:**
+- Keep `.af` files focused and concise
+- Use external documentation for extensive details
+- If hitting the limit, consider splitting into multiple configuration files
+
+**Why 1 MB?**
+- Prevents accidental processing of huge files
+- Ensures fast parsing (< 100ms for typical files)
+- Adequate for thousands of configuration items
 
 ### Piping and Redirection
 
