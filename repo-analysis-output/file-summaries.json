@@ -55,15 +55,16 @@
       "role": "cli",
       "role_justification": "CLI-related name 'cli'",
       "metrics": {
-        "size_bytes": 5018,
-        "loc": 114,
+        "size_bytes": 6922,
+        "loc": 162,
         "todo_count": 0,
-        "declaration_count": 5
+        "declaration_count": 6
       },
       "structure": {
         "declarations": [
           "function hello",
           "function run",
+          "function validate",
           "function help",
           "function version",
           "function main"
@@ -92,7 +93,7 @@
       "role": "implementation",
       "role_justification": "general implementation file (default classification)",
       "metrics": {
-        "size_bytes": 37441,
+        "size_bytes": 37533,
         "loc": 744,
         "todo_count": 0,
         "declaration_count": 18
@@ -210,10 +211,10 @@
       "role": "test",
       "role_justification": "filename starts with 'test_'",
       "metrics": {
-        "size_bytes": 17237,
-        "loc": 328,
+        "size_bytes": 25153,
+        "loc": 468,
         "todo_count": 0,
-        "declaration_count": 20
+        "declaration_count": 35
       },
       "structure": {
         "declarations": [
@@ -236,7 +237,22 @@
           "function test_run_command_error_includes_line_number",
           "function test_run_command_without_arguments",
           "function test_run_command_json_is_valid",
-          "function test_run_command_stdout_stderr_separation"
+          "function test_run_command_stdout_stderr_separation",
+          "function test_run_command_stdin_valid",
+          "function test_run_command_stdin_with_syntax_error",
+          "function test_run_command_stdin_with_missing_key",
+          "function test_run_command_stdin_no_trailing_newline",
+          "function test_run_command_stdin_empty_input",
+          "function test_run_command_stdin_json_only_stdout",
+          "function test_run_command_file_named_dash",
+          "function test_validate_command_with_valid_file",
+          "function test_validate_command_with_invalid_file",
+          "function test_validate_command_with_missing_file",
+          "function test_validate_command_stdin_valid",
+          "function test_validate_command_stdin_invalid",
+          "function test_validate_command_help",
+          "function test_validate_command_ci_workflow",
+          "function test_validate_command_in_help"
         ]
       },
       "dependencies": {

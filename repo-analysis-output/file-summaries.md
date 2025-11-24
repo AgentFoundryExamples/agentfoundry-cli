@@ -26,13 +26,14 @@ Total files: 8
 **Language:** Python  
 **Role:** cli  
 **Role Justification:** CLI-related name 'cli'  
-**Size:** 4.90 KB  
-**LOC:** 114  
+**Size:** 6.76 KB  
+**LOC:** 162  
 **TODOs/FIXMEs:** 0  
-**Declarations:** 5  
+**Declarations:** 6  
 **Top-level declarations:**
   - function hello
   - function run
+  - function validate
   - function help
   - function version
   - function main
@@ -44,7 +45,7 @@ Total files: 8
 **Language:** Python  
 **Role:** implementation  
 **Role Justification:** general implementation file (default classification)  
-**Size:** 36.56 KB  
+**Size:** 36.65 KB  
 **LOC:** 744  
 **TODOs/FIXMEs:** 0  
 **Declarations:** 18  
@@ -99,10 +100,10 @@ Total files: 8
 **Language:** Python  
 **Role:** test  
 **Role Justification:** filename starts with 'test_'  
-**Size:** 16.83 KB  
-**LOC:** 328  
+**Size:** 24.56 KB  
+**LOC:** 468  
 **TODOs/FIXMEs:** 0  
-**Declarations:** 20  
+**Declarations:** 35  
 **Top-level declarations:**
   - function test_run_command_with_valid_file
   - function test_run_command_with_example_file
@@ -114,7 +115,7 @@ Total files: 8
   - function test_run_command_with_duplicate_key
   - function test_run_command_with_syntax_error
   - function test_run_command_with_empty_list
-  - ... and 10 more
+  - ... and 25 more
 **External Dependencies:**
   - **Stdlib:** `json`, `os`, `pathlib.Path`, `tempfile`
   - **Third-party:** `typer.testing.CliRunner`
