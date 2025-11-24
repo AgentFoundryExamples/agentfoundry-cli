@@ -92,13 +92,15 @@
       "role": "implementation",
       "role_justification": "general implementation file (default classification)",
       "metrics": {
-        "size_bytes": 30988,
-        "loc": 634,
+        "size_bytes": 37441,
+        "loc": 744,
         "todo_count": 0,
-        "declaration_count": 16
+        "declaration_count": 18
       },
       "structure": {
         "declarations": [
+          "function _levenshtein_distance",
+          "function _find_closest_key",
           "class TokenType",
           "class Token",
           "class AFParseError",
@@ -260,10 +262,10 @@
       "role": "test",
       "role_justification": "filename starts with 'test_'",
       "metrics": {
-        "size_bytes": 37929,
-        "loc": 905,
+        "size_bytes": 50646,
+        "loc": 1308,
         "todo_count": 0,
-        "declaration_count": 67
+        "declaration_count": 97
       },
       "structure": {
         "declarations": [
@@ -305,7 +307,7 @@
           "function test_parse_file_accepts_uppercase_af_extension",
           "function test_error_includes_filename",
           "function test_error_includes_line_number",
-          "function test_multiline_not_supported",
+          "function test_multiline_strings_supported",
           "function test_list_with_mixed_quotes",
           "function test_single_item_list",
           "function test_list_with_whitespace",
@@ -329,11 +331,41 @@
           "function test_load_input_requires_exactly_one_source",
           "function test_tokenizer_preserves_positions",
           "function test_error_messages_include_position",
-          "function test_multiline_strings_not_supported",
+          "function test_multiline_strings_preserve_newlines",
           "function test_canonical_key_order_preserved",
           "function test_parse_af_file_canonical_order",
           "function test_validate_af_content_bom_size_consistency",
-          "function test_stdin_size_check_before_newline_normalization"
+          "function test_stdin_size_check_before_newline_normalization",
+          "function test_multiline_list_with_newlines",
+          "function test_multiline_list_trailing_comma",
+          "function test_inline_comment_after_value",
+          "function test_inline_comment_after_list",
+          "function test_inline_comment_in_list",
+          "function test_fuzzy_matching_typo_purpose",
+          "function test_fuzzy_matching_typo_vision",
+          "function test_fuzzy_matching_typo_must",
+          "function test_fuzzy_matching_no_suggestion_far_typo",
+          "function test_multiline_purpose_with_vision",
+          "function test_multiline_vision",
+          "function test_mixed_multiline_strings_and_lists",
+          "function test_error_with_caret_indicator",
+          "function test_newline_separated_items_without_commas",
+          "function test_newline_separated_with_mixed_commas",
+          "function test_duplicate_key_error_has_caret",
+          "function test_empty_key_error_has_caret",
+          "function test_unquoted_string_error_has_caret",
+          "function test_same_line_items_without_comma_rejected",
+          "function test_unterminated_string_has_caret",
+          "function test_empty_string_tokenizer_error_has_caret",
+          "function test_missing_colon_has_caret",
+          "function test_comment_before_string_value",
+          "function test_comment_before_list_value",
+          "function test_newline_before_value",
+          "function test_multiple_comments_before_value",
+          "function test_missing_key_has_caret",
+          "function test_missing_multiple_keys_has_caret",
+          "function test_empty_input_has_caret",
+          "function test_whitespace_only_input_has_caret"
         ]
       },
       "dependencies": {

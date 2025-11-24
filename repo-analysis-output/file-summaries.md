@@ -44,11 +44,13 @@ Total files: 8
 **Language:** Python  
 **Role:** implementation  
 **Role Justification:** general implementation file (default classification)  
-**Size:** 30.26 KB  
-**LOC:** 634  
+**Size:** 36.56 KB  
+**LOC:** 744  
 **TODOs/FIXMEs:** 0  
-**Declarations:** 16  
+**Declarations:** 18  
 **Top-level declarations:**
+  - function _levenshtein_distance
+  - function _find_closest_key
   - class TokenType
   - class Token
   - class AFParseError
@@ -57,9 +59,7 @@ Total files: 8
   - class AFUnknownKeyError
   - class AFSyntaxError
   - class AFEmptyValueError
-  - class AFSizeError
-  - function _strip_utf8_bom
-  - ... and 6 more
+  - ... and 8 more
 **External Dependencies:**
   - **Stdlib:** `dataclasses.dataclass`, `enum.Enum`, `enum.auto`, `io`, `pathlib.Path`
     _(and 7 more)_
@@ -123,10 +123,10 @@ Total files: 8
 **Language:** Python  
 **Role:** test  
 **Role Justification:** filename starts with 'test_'  
-**Size:** 37.04 KB  
-**LOC:** 905  
+**Size:** 49.46 KB  
+**LOC:** 1308  
 **TODOs/FIXMEs:** 0  
-**Declarations:** 67  
+**Declarations:** 97  
 **Top-level declarations:**
   - function test_parse_valid_file
   - function test_parse_valid_file_with_single_quotes
@@ -138,7 +138,7 @@ Total files: 8
   - function test_missing_purpose_key
   - function test_missing_vision_key
   - function test_missing_must_key
-  - ... and 57 more
+  - ... and 87 more
 **External Dependencies:**
   - **Stdlib:** `io`, `os`, `pathlib.Path`, `sys`, `tempfile`
   - **Third-party:** `pytest`
