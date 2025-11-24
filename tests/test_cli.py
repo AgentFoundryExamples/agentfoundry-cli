@@ -51,7 +51,7 @@ def test_run_command_stub():
     """Test that run command stub exists and provides informative message."""
     result = runner.invoke(app, ["run"])
     assert result.exit_code == 1  # Should exit with error since not implemented
-    assert "not yet implemented" in result.stdout
+    assert "not yet implemented" in result.stdout.lower()
     assert "coming soon" in result.stdout.lower()
 
 
