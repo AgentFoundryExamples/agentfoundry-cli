@@ -1,10 +1,87 @@
 {
-  "nodes": [],
-  "edges": [],
+  "nodes": [
+    {
+      "id": "agentfoundry_cli/__init__.py",
+      "path": "agentfoundry_cli/__init__.py",
+      "type": "file",
+      "external_dependencies": {
+        "stdlib": [],
+        "third-party": []
+      }
+    },
+    {
+      "id": "agentfoundry_cli/__main__.py",
+      "path": "agentfoundry_cli/__main__.py",
+      "type": "file",
+      "external_dependencies": {
+        "stdlib": [],
+        "third-party": []
+      }
+    },
+    {
+      "id": "agentfoundry_cli/cli.py",
+      "path": "agentfoundry_cli/cli.py",
+      "type": "file",
+      "external_dependencies": {
+        "stdlib": [
+          "typing.Optional"
+        ],
+        "third-party": [
+          "typer"
+        ]
+      }
+    },
+    {
+      "id": "tests/__init__.py",
+      "path": "tests/__init__.py",
+      "type": "file",
+      "external_dependencies": {
+        "stdlib": [],
+        "third-party": []
+      }
+    },
+    {
+      "id": "tests/test_cli.py",
+      "path": "tests/test_cli.py",
+      "type": "file",
+      "external_dependencies": {
+        "stdlib": [
+          "re"
+        ],
+        "third-party": [
+          "typer.testing.CliRunner"
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "agentfoundry_cli/__main__.py",
+      "target": "agentfoundry_cli/cli.py"
+    },
+    {
+      "source": "agentfoundry_cli/cli.py",
+      "target": "agentfoundry_cli/__init__.py"
+    },
+    {
+      "source": "tests/test_cli.py",
+      "target": "agentfoundry_cli/cli.py"
+    },
+    {
+      "source": "tests/test_cli.py",
+      "target": "agentfoundry_cli/__init__.py"
+    }
+  ],
   "external_dependencies_summary": {
-    "stdlib": [],
-    "third-party": [],
-    "stdlib_count": 0,
-    "third-party_count": 0
+    "stdlib": [
+      "re",
+      "typing.Optional"
+    ],
+    "third-party": [
+      "typer",
+      "typer.testing.CliRunner"
+    ],
+    "stdlib_count": 2,
+    "third-party_count": 2
   }
 }

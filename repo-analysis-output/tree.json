@@ -38,17 +38,83 @@
     },
     {
       "type": "directory",
+      "name": "agentfoundry_cli",
+      "children": [
+        {
+          "type": "file",
+          "name": "__init__.py"
+        },
+        {
+          "type": "file",
+          "name": "__main__.py"
+        },
+        {
+          "type": "file",
+          "name": "cli.py"
+        }
+      ]
+    },
+    {
+      "type": "directory",
+      "name": "docs",
+      "children": [
+        {
+          "type": "file",
+          "name": "development.md"
+        }
+      ]
+    },
+    {
+      "type": "directory",
       "name": "repo-analysis-output",
       "children": [
         {
           "type": "file",
+          "name": "dependencies.json"
+        },
+        {
+          "type": "file",
+          "name": "dependencies.md"
+        },
+        {
+          "type": "file",
           "name": "SUMMARY.md"
+        },
+        {
+          "type": "file",
+          "name": "tree.json"
+        },
+        {
+          "type": "file",
+          "name": "tree.md"
+        }
+      ]
+    },
+    {
+      "type": "directory",
+      "name": "tests",
+      "children": [
+        {
+          "type": "file",
+          "name": "__init__.py"
+        },
+        {
+          "type": "file",
+          "name": "test_cli.py"
         }
       ]
     },
     {
       "type": "file",
+      "name": ".gitignore"
+    },
+    {
+      "type": "file",
       "name": "LICENSE"
+    },
+    {
+      "type": "file",
+      "name": "pyproject.toml"
     },
     {
       "type": "file",

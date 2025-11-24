@@ -1,0 +1,144 @@
+{
+  "schema_version": "2.0",
+  "total_files": 5,
+  "files": [
+    {
+      "schema_version": "2.0",
+      "path": "agentfoundry_cli/__init__.py",
+      "language": "Python",
+      "role": "module-init",
+      "role_justification": "module initialization file '__init__'",
+      "metrics": {
+        "size_bytes": 1222,
+        "loc": 8,
+        "todo_count": 0
+      },
+      "structure": {
+        "declarations": []
+      },
+      "dependencies": {
+        "imports": [],
+        "exports": [],
+        "external": {
+          "stdlib": [],
+          "third-party": []
+        }
+      }
+    },
+    {
+      "schema_version": "2.0",
+      "path": "agentfoundry_cli/__main__.py",
+      "language": "Python",
+      "role": "entry-point",
+      "role_justification": "common entry point name '__main__'",
+      "metrics": {
+        "size_bytes": 1047,
+        "loc": 6,
+        "todo_count": 0
+      },
+      "structure": {
+        "declarations": []
+      },
+      "dependencies": {
+        "imports": [],
+        "exports": [],
+        "external": {
+          "stdlib": [],
+          "third-party": []
+        }
+      }
+    },
+    {
+      "schema_version": "2.0",
+      "path": "agentfoundry_cli/cli.py",
+      "language": "Python",
+      "role": "cli",
+      "role_justification": "CLI-related name 'cli'",
+      "metrics": {
+        "size_bytes": 2569,
+        "loc": 55,
+        "todo_count": 0,
+        "declaration_count": 4
+      },
+      "structure": {
+        "declarations": [
+          "function hello",
+          "function run",
+          "function version",
+          "function main"
+        ]
+      },
+      "dependencies": {
+        "imports": [],
+        "exports": [],
+        "external": {
+          "stdlib": [
+            "typing.Optional"
+          ],
+          "third-party": [
+            "typer"
+          ]
+        }
+      }
+    },
+    {
+      "schema_version": "2.0",
+      "path": "tests/__init__.py",
+      "language": "Python",
+      "role": "test",
+      "role_justification": "located in 'tests' directory",
+      "metrics": {
+        "size_bytes": 945,
+        "loc": 1,
+        "todo_count": 0
+      },
+      "structure": {
+        "declarations": []
+      },
+      "dependencies": {
+        "imports": [],
+        "exports": [],
+        "external": {
+          "stdlib": [],
+          "third-party": []
+        }
+      }
+    },
+    {
+      "schema_version": "2.0",
+      "path": "tests/test_cli.py",
+      "language": "Python",
+      "role": "test",
+      "role_justification": "filename starts with 'test_'",
+      "metrics": {
+        "size_bytes": 2886,
+        "loc": 46,
+        "todo_count": 0,
+        "declaration_count": 7
+      },
+      "structure": {
+        "declarations": [
+          "function test_help_command",
+          "function test_hello_command_default",
+          "function test_hello_command_with_name",
+          "function test_version_command",
+          "function test_version_format",
+          "function test_run_command_stub",
+          "function test_run_command_in_help"
+        ]
+      },
+      "dependencies": {
+        "imports": [],
+        "exports": [],
+        "external": {
+          "stdlib": [
+            "re"
+          ],
+          "third-party": [
+            "typer.testing.CliRunner"
+          ]
+        }
+      }
+    }
+  ]
+}

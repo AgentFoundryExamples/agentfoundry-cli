@@ -7,7 +7,22 @@
     └── repo-analyzer.config.json
   └── workflows
     └── af_maintenance.yml
+├── agentfoundry_cli
+  ├── __init__.py
+  ├── __main__.py
+  └── cli.py
+├── docs
+  └── development.md
 ├── repo-analysis-output
-  └── SUMMARY.md
+  ├── dependencies.json
+  ├── dependencies.md
+  ├── SUMMARY.md
+  ├── tree.json
+  └── tree.md
+├── tests
+  ├── __init__.py
+  └── test_cli.py
+├── .gitignore
 ├── LICENSE
+├── pyproject.toml
 └── README.md
