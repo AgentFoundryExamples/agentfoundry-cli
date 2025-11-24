@@ -104,6 +104,51 @@ def run(
 
 
 @app.command()
+def help(
+    command: Optional[str] = typer.Argument(
+        None,
+        help="Command to get help for"
+    )
+):
+    """
+    Display help for the CLI or a specific command.
+    
+    Examples:
+        af help        # Show main help
+        af help run    # Show help for 'run' command
+    """
+    # Get the Click app from Typer
+    click_app = typer.main.get_command(app)
+    
+    if command is None:
+        # Show main help
+        ctx = click_app.make_context('af', [])
+        typer.echo(click_app.get_help(ctx))
+    else:
+        # Find and show help for specific command
+        ctx = click_app.make_context('af', [])
+        subcommand = click_app.commands.get(command)
+        
+        if subcommand is None:
+            typer.secho(f"Error: Unknown command '{command}'", fg=typer.colors.RED, err=True)
+            typer.echo("\nAvailable commands:")
+            for cmd_name in sorted(click_app.commands.keys()):
+                typer.echo(f"  - {cmd_name}")
+            raise typer.Exit(1)
+        
+        # Show help for the subcommand - use resilient_parsing to avoid validation
+        sub_ctx = subcommand.make_context(
+            command, 
+            [], 
+            parent=ctx,
+            allow_extra_args=True,
+            allow_interspersed_args=False,
+            resilient_parsing=True
+        )
+        typer.echo(subcommand.get_help(sub_ctx))
+
+
+@app.command()
 def version():
     """
     Display the version of the Agent Foundry CLI.

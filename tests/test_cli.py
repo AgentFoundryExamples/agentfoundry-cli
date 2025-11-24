@@ -82,3 +82,27 @@ def test_run_command_in_help():
     # The new description mentions parsing and validating .af files
     assert ".af" in result.stdout.lower() or "parse" in result.stdout.lower()
 
+
+def test_help_command():
+    """Test that help command shows main help."""
+    result = runner.invoke(app, ["help"])
+    assert result.exit_code == 0
+    assert "Agent Foundry CLI" in result.stdout
+    assert "Commands" in result.stdout or "commands" in result.stdout.lower()
+
+
+def test_help_command_with_subcommand():
+    """Test that help command can show help for specific commands."""
+    result = runner.invoke(app, ["help", "run"])
+    assert result.exit_code == 0
+    assert "Parse and validate" in result.stdout
+    assert ".af file" in result.stdout
+
+
+def test_help_command_with_unknown_subcommand():
+    """Test that help command handles unknown commands gracefully."""
+    result = runner.invoke(app, ["help", "nonexistent"])
+    assert result.exit_code == 1
+    output = result.stdout + (result.stderr or "")
+    assert "unknown" in output.lower() or "error" in output.lower()
+

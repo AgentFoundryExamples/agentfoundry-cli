@@ -441,9 +441,12 @@ def parse_af_file(filepath: str) -> Dict[str, Any]:
     # Verify all required keys are present
     missing_keys = REQUIRED_KEYS - set(result.keys())
     if missing_keys:
+        # Report the last line of the file as context for where to add missing keys
+        last_line = len(lines)
         raise AFMissingKeyError(
             f"Missing required keys: {', '.join(sorted(missing_keys))}",
-            filename=filepath
+            filename=filepath,
+            line=last_line
         )
     
     return result
@@ -494,9 +497,12 @@ def validate_af_content(content: str, filename: str = None) -> Dict[str, Any]:
     # Verify all required keys are present
     missing_keys = REQUIRED_KEYS - set(result.keys())
     if missing_keys:
+        # Report the last line of content as context
+        last_line = len(lines)
         raise AFMissingKeyError(
             f"Missing required keys: {', '.join(sorted(missing_keys))}",
-            filename=filename
+            filename=filename,
+            line=last_line
         )
     
     return result
