@@ -816,11 +816,12 @@ class Parser:
                 break
             elif next_token and next_token.type == TokenType.STRING:
                 # Newline-separated item (no comma required)
+                # Set expecting_item to True so the next iteration accepts this STRING
                 expecting_item = True
                 continue
             else:
                 raise AFSyntaxError(
-                    "Expected comma, closing bracket, or list item in list",
+                    "Expected comma, closing bracket, or string item",
                     filename=self.filename,
                     line=next_token.line if next_token else self.tokens[-1].line,
                     column=next_token.column if next_token else self.tokens[-1].column,
