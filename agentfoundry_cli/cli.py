@@ -6,6 +6,7 @@ This module defines the Typer application and all CLI commands.
 
 import typer
 from typing import Optional
+from agentfoundry_cli import __version__
 
 # Create the main Typer app
 app = typer.Typer(
@@ -42,7 +43,6 @@ def version():
     """
     Display the version of the Agent Foundry CLI.
     """
-    from agentfoundry_cli import __version__
     typer.echo(f"Agent Foundry CLI version: {__version__}")
 
 

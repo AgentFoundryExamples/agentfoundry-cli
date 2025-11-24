@@ -40,6 +40,8 @@ def test_version_command():
     assert "Agent Foundry CLI version" in result.stdout
 
 
-def test_version_import():
-    """Test that version can be imported."""
-    assert __version__ == "0.1.0"
+def test_version_format():
+    """Test that version follows semantic versioning format."""
+    import re
+    # Check version format is semantic versioning (e.g., 0.1.0, 1.2.3)
+    assert re.match(r"^\d+\.\d+\.\d+$", __version__)
