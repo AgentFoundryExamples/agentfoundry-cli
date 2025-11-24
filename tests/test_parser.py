@@ -1624,3 +1624,21 @@ nice: ["Test"]
     # Should include caret indicator
     assert "^" in error_msg
     assert "empty" in error_msg.lower()
+
+
+def test_missing_colon_has_caret():
+    """Test that missing colon errors include caret indicator (P1 fix)."""
+    content = """
+purpose "Test"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFSyntaxError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    assert "colon" in error_msg.lower() or "expected" in error_msg.lower()

@@ -582,11 +582,13 @@ class Parser:
             expected = token_type.name
             actual = token.type.name if token else "EOF"
             
+            line_num = token.line if token else self.tokens[-1].line
             raise AFSyntaxError(
                 f"Expected {expected}, got {actual}",
                 filename=self.filename,
-                line=token.line if token else self.tokens[-1].line,
-                column=token.column if token else self.tokens[-1].column
+                line=line_num,
+                column=token.column if token else self.tokens[-1].column,
+                source_line=self._get_source_line(line_num)
             )
         return self.advance()
     
