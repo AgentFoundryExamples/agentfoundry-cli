@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentfoundry-cli"
+version = "0.1.0"
+description = "Command-line interface for Agent Foundry"
+readme = "README.md"
+authors = [
+    { name = "Agent Foundry and John Brosnihan" }
+]
+license = { text = "GPL-3.0-or-later" }
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "typer[all]>=0.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+af = "agentfoundry_cli.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/AgentFoundryExamples/agentfoundry-cli"
+Repository = "https://github.com/AgentFoundryExamples/agentfoundry-cli"
+
+[tool.setuptools]
+packages = ["agentfoundry_cli"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
