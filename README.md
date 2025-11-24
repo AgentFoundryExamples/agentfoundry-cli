@@ -90,7 +90,7 @@ dont: ["Skip error handling", "Ignore security"]
 nice: ["Dark mode", "Mobile support"]
 ```
 
-For detailed syntax and format specification, see [docs/format.md](docs/format.md).
+For detailed syntax and format specification, see [docs/format.md](docs/format.md). A complete example is available in [example.af](example.af).
 
 ### Using the Parser
 
