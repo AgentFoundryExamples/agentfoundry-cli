@@ -852,7 +852,6 @@ def parse_af_stdin() -> Dict[str, Any]:
     """
     # Ensure stdin is using UTF-8 encoding
     # Create a UTF-8 text wrapper around stdin's buffer
-    import io
     if hasattr(sys.stdin, 'buffer'):
         # If stdin has a buffer (normal case), wrap it with UTF-8 encoding
         utf8_stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='strict')

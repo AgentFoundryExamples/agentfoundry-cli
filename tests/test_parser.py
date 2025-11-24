@@ -864,15 +864,11 @@ nice: ["Test"]
     num_comment_lines = remaining // 4
     padding = ("# x\n" * num_comment_lines)
     
-    # Add any remaining bytes as a shorter comment
+    # Add any remaining bytes as a final comment (without newline if needed)
     remaining_bytes = remaining % 4
     if remaining_bytes > 0:
-        if remaining_bytes == 1:
-            padding += "#"
-        elif remaining_bytes == 2:
-            padding += "# "
-        elif remaining_bytes == 3:
-            padding += "# x"
+        # Build the final comment to exactly fill the remaining bytes
+        padding += ('#' + ' x'[:remaining_bytes - 1])
     
     content = padding + base_content
     
