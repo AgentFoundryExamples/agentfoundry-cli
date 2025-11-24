@@ -65,7 +65,7 @@ af run path/to/file.af
 The `af run` command:
 
 1. **Validates Extension** - Ensures the file has a `.af` extension (case-insensitive)
-2. **Checks Size** - Rejects files ≥ 1 MB before parsing
+2. **Checks Size** - Rejects files larger than 1 MB before parsing
 3. **Validates Encoding** - Ensures UTF-8 encoding, strips BOM if present
 4. **Parses Content** - Tokenizes and parses using state machine
 5. **Validates Structure** - Checks that all required keys are present and properly formatted
@@ -350,8 +350,8 @@ To prevent resource exhaustion, the parser enforces strict size limits:
 **Size Limit:** 1 MB (1,048,576 bytes)
 
 **Behavior:**
-- Files **below** 1 MB: Parsed successfully
-- Files **at or above** 1 MB: Rejected with clear error before parsing
+- Files **at or below** 1 MB: Parsed successfully
+- Files **larger than** 1 MB: Rejected with clear error before parsing
 - Applies to both file input and stdin
 
 **Error Message:**
