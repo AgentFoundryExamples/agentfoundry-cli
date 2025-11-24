@@ -1,6 +1,6 @@
 # Development Guide
 
-**Version: 1.0.0 (MVP Release)**
+**Version: 1.1.0**
 
 This document provides guidelines for developing and contributing to the Agent Foundry CLI.
 
@@ -176,7 +176,7 @@ python agentfoundry_cli/cli.py --help
 
 ## Testing
 
-The project has comprehensive test coverage with 92+ tests covering all core functionality.
+The project has comprehensive test coverage with 142 tests covering all core functionality.
 
 ### Running Tests
 

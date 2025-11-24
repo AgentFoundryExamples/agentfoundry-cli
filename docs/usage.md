@@ -1,6 +1,6 @@
 # Agent Foundry CLI Usage Guide
 
-**Version: 1.0.0 (MVP Release)**
+**Version: 1.1.0**
 
 This guide provides detailed information on using the Agent Foundry CLI (`af`) command-line tool.
 

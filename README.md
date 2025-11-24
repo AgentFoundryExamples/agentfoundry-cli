@@ -1,6 +1,6 @@
 # Agent Foundry CLI
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-GPLv3-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
 
@@ -13,7 +13,7 @@ Command-line interface for Agent Foundry, providing the `af` command for managin
 - 🎨 Rich terminal output with color support
 - 🔌 Extensible command structure for future features
 - 📝 Parser and validator for `.af` (Agent Foundry) configuration files
-- ✅ Comprehensive test suite with 76+ tests
+- ✅ Comprehensive test suite with 142 tests
 
 ## Installation
 
@@ -237,9 +237,9 @@ Complete documentation is available:
 
 ## Version Information
 
-Current version: **1.0.0** (MVP Release)
+Current version: **1.1.0**
 
-This is the initial MVP release of Agent Foundry CLI. See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and the complete feature set.
+This release includes the parser refactor with tokenizer-driven architecture, the `af validate` command, stdin support, and enhanced error reporting. See [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
 
 
 
