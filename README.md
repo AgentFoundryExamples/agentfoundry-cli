@@ -8,6 +8,7 @@ Command-line interface for Agent Foundry, providing the `af` command for managin
 - 📦 Easy installation via pip
 - 🎨 Rich terminal output with color support
 - 🔌 Extensible command structure for future features
+- 📝 Parser and validator for `.af` (Agent Foundry) configuration files
 
 ## Installation
 
@@ -68,6 +69,37 @@ python agentfoundry_cli/cli.py --help
 
 - **`af run`** command for executing agent workflows (coming soon!)
 - Additional commands for agent management and configuration
+
+## Agent Foundry Files
+
+Agent Foundry uses `.af` files to define agent configurations. These files specify:
+
+- **purpose** - What the agent should accomplish
+- **vision** - The desired outcome or end state
+- **must** - Required behaviors and constraints
+- **dont** - Behaviors to avoid
+- **nice** - Optional enhancements
+
+Example `.af` file:
+
+```
+purpose: "Build a task management system"
+vision: "Create an intuitive tool for tracking tasks"
+must: ["User authentication", "Data persistence"]
+dont: ["Skip error handling", "Ignore security"]
+nice: ["Dark mode", "Mobile support"]
+```
+
+For detailed syntax and format specification, see [docs/format.md](docs/format.md). A complete example is available in [example.af](example.af).
+
+### Using the Parser
+
+```python
+from agentfoundry_cli.parser import parse_af_file
+
+config = parse_af_file("agent.af")
+print(config['purpose'])  # Access parsed values
+```
 
 ## Avoiding Conflicts
 
