@@ -140,8 +140,18 @@ This deterministic ordering ensures consistency across runs and makes it suitabl
 
 Errors are written to stderr and include:
 - **Filename** - The path to the file being processed
-- **Line number** - The specific line where the error occurred (when applicable)
-- **Description** - A human-readable explanation of the problem
+- **Line number** - The specific line where the error occurred
+- **Column number** - The exact column position of the error
+- **Caret indicator** - A visual marker (^) pointing to the exact error location
+- **Fuzzy suggestions** - For typos in key names, suggests the closest valid key
+
+#### Typo in Key Name
+```bash
+$ af run config.af
+Error: File 'config.af', line 2, column 1: Unknown key 'pourpose' (did you mean 'purpose'?)
+pourpose: "Build a task manager"
+^
+```
 
 ### Common Errors
 
@@ -433,6 +443,40 @@ See [examples/example.af](../examples/example.af) for a full-featured example de
 - Descriptive purpose and vision
 - Multiple must-have requirements
 - Important constraints in dont
+- Optional nice-to-have features
+- Proper formatting and comments
+
+### Multiline Example
+
+`multiline.af`:
+```
+# Configuration with multiline strings and lists
+purpose: "Build a comprehensive
+task management system
+that teams will love"
+
+vision: "Create an intuitive tool
+that empowers collaboration"
+
+# Core features
+must: [
+    "User authentication",       # Login system
+    "Task creation and editing", # CRUD operations
+    "Data persistence"           # Database
+]
+
+# Avoid these
+dont: [
+    "Skip input validation",
+    "Ignore security"
+]
+
+# Future enhancements
+nice: [
+    "Dark mode support",
+    "Mobile responsive design"
+]
+```
 - Optional nice-to-have features
 - Proper formatting and comments
 
