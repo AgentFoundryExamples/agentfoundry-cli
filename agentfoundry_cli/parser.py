@@ -803,8 +803,11 @@ class Parser:
             items.append(token.value)
             expecting_item = False
             
-            # Skip whitespace
+            # Skip whitespace and track if we saw a newline
+            consumed_newline = False
             while self.peek() and self.peek().type in (TokenType.NEWLINE, TokenType.COMMENT):
+                if self.peek().type == TokenType.NEWLINE:
+                    consumed_newline = True
                 self.advance()
             
             # Check for comma, closing bracket, or another item (newline-separated)
@@ -814,7 +817,7 @@ class Parser:
                 expecting_item = True  # Now we expect another item
             elif next_token and next_token.type == TokenType.RBRACKET:
                 break
-            elif next_token and next_token.type == TokenType.STRING:
+            elif next_token and next_token.type == TokenType.STRING and consumed_newline:
                 # Newline-separated item (no comma required)
                 # Set expecting_item to True so the next iteration accepts this STRING
                 expecting_item = True

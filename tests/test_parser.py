@@ -1571,3 +1571,20 @@ nice: ["Test"]
     # Should include caret indicator
     assert "^" in error_msg
     assert "quoted" in error_msg.lower()
+
+
+def test_same_line_items_without_comma_rejected():
+    """Test that items on the same line without comma are rejected (P2 fix)."""
+    content = """
+purpose: "Test"
+vision: "Test"
+must: ["Item 1" "Item 2"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFSyntaxError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value).lower()
+    # Should require comma or closing bracket
+    assert "comma" in error_msg or "bracket" in error_msg
