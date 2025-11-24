@@ -50,6 +50,10 @@ from pathlib import Path
 from dataclasses import dataclass
 
 
+# Maximum edit distance for fuzzy key matching suggestions
+MAX_TYPO_DISTANCE = 2
+
+
 def _levenshtein_distance(s1: str, s2: str) -> int:
     """
     Calculate the Levenshtein distance between two strings.
@@ -63,7 +67,7 @@ def _levenshtein_distance(s1: str, s2: str) -> int:
     Returns:
         Edit distance between s1 and s2
     """
-    # Swap strings if s2 is longer to optimize space complexity
+    # Ensure s1 is the longer string to optimize space (use shorter for row array)
     if len(s1) < len(s2):
         s1, s2 = s2, s1
     
@@ -95,7 +99,7 @@ def _find_closest_key(unknown_key: str, valid_keys: set) -> Optional[str]:
         valid_keys: Set of valid keys
         
     Returns:
-        The closest matching key if distance <= 2, otherwise None
+        The closest matching key if distance <= MAX_TYPO_DISTANCE, otherwise None
     """
     min_distance = float('inf')
     closest_key = None
@@ -106,8 +110,8 @@ def _find_closest_key(unknown_key: str, valid_keys: set) -> Optional[str]:
             min_distance = distance
             closest_key = valid_key
     
-    # Only suggest if distance is <= 2 (reasonable typo distance)
-    if min_distance <= 2:
+    # Only suggest if distance is within threshold (reasonable typo)
+    if min_distance <= MAX_TYPO_DISTANCE:
         return closest_key
     
     return None
