@@ -1108,3 +1108,74 @@ nice: ["Test"]
     # Should fail because newline inside string
     with pytest.raises(AFSyntaxError):
         validate_af_content(content)
+
+
+def test_canonical_key_order_preserved():
+    """Test that parser always returns keys in canonical order regardless of input order."""
+    from agentfoundry_cli.parser import CANONICAL_KEY_ORDER
+    
+    # Test 1: Keys in canonical order
+    content1 = """
+purpose: "Test"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result1 = validate_af_content(content1)
+    assert list(result1.keys()) == CANONICAL_KEY_ORDER
+    
+    # Test 2: Keys in random order
+    content2 = """
+nice: ["Test"]
+must: ["Test"]
+vision: "Test"
+purpose: "Test"
+dont: ["Test"]
+"""
+    result2 = validate_af_content(content2)
+    assert list(result2.keys()) == CANONICAL_KEY_ORDER
+    
+    # Test 3: Keys in reverse order
+    content3 = """
+nice: ["Test"]
+dont: ["Test"]
+must: ["Test"]
+vision: "Test"
+purpose: "Test"
+"""
+    result3 = validate_af_content(content3)
+    assert list(result3.keys()) == CANONICAL_KEY_ORDER
+    
+    # Verify all results have same key order
+    assert list(result1.keys()) == list(result2.keys()) == list(result3.keys())
+
+
+def test_parse_af_file_canonical_order():
+    """Test that parse_af_file returns keys in canonical order."""
+    from agentfoundry_cli.parser import CANONICAL_KEY_ORDER
+    
+    # Create a file with keys in non-canonical order
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.af', delete=False, encoding='utf-8') as f:
+        f.write("""
+dont: ["Skip tests"]
+nice: ["Add themes"]
+purpose: "Build a task manager"
+must: ["Complete auth"]
+vision: "Create something great"
+""")
+        temp_path = f.name
+    
+    try:
+        result = parse_af_file(temp_path)
+        # Verify keys are in canonical order
+        assert list(result.keys()) == CANONICAL_KEY_ORDER
+        
+        # Verify values are correct
+        assert result['purpose'] == "Build a task manager"
+        assert result['vision'] == "Create something great"
+        assert result['must'] == ["Complete auth"]
+        assert result['dont'] == ["Skip tests"]
+        assert result['nice'] == ["Add themes"]
+    finally:
+        os.unlink(temp_path)

@@ -139,6 +139,8 @@ class AFSizeError(AFParseError):
 
 # Required keys in .af files
 REQUIRED_KEYS = {'purpose', 'vision', 'must', 'dont', 'nice'}
+# Canonical key order for output
+CANONICAL_KEY_ORDER = ['purpose', 'vision', 'must', 'dont', 'nice']
 # Keys that should be strings
 STRING_KEYS = {'purpose', 'vision'}
 # Keys that should be lists
@@ -497,7 +499,7 @@ class Parser:
         Parse tokens into the .af structure.
         
         Returns:
-            Dictionary with keys: purpose, vision, must, dont, nice
+            Dictionary with keys in canonical order: purpose, vision, must, dont, nice
         """
         while self.peek() and self.peek().type != TokenType.EOF:
             self.skip_newlines_and_comments()
@@ -516,7 +518,8 @@ class Parser:
                 line=last_token.line
             )
         
-        return self.result
+        # Return result in canonical order
+        return {key: self.result[key] for key in CANONICAL_KEY_ORDER}
     
     def _parse_line(self):
         """Parse a single key-value line."""
