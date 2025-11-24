@@ -27,8 +27,8 @@ from agentfoundry_cli import __version__
 runner = CliRunner(mix_stderr=False)
 
 
-def test_help_command():
-    """Test that the help command works."""
+def test_main_help_flag():
+    """Test that the --help flag works."""
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
     assert "Agent Foundry CLI" in result.stdout

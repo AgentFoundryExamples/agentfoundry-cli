@@ -389,7 +389,8 @@ def parse_af_file(filepath: str) -> Dict[str, Any]:
     if path.suffix.lower() != '.af':
         raise AFParseError(
             f"File must have .af extension, got: {path.suffix or '(no extension)'}",
-            filename=filepath
+            filename=filepath,
+            line=1
         )
     
     # Read file content
