@@ -47,7 +47,7 @@ af version
 
 Output:
 ```
-Agent Foundry CLI version: 1.0.0
+Agent Foundry CLI version: 1.1.0
 ```
 
 ## Running Agent Foundry Files
@@ -524,8 +524,6 @@ nice: [
     "Mobile responsive design",
 ]
 ```
-- Optional nice-to-have features
-- Proper formatting and comments
 
 ## Next Steps
 
