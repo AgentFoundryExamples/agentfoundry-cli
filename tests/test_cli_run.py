@@ -638,7 +638,7 @@ def test_run_command_stdin_json_only_stdout():
     assert output_data is not None
     
     # Verify stderr is empty for successful run
-    assert result.stderr == "" or not result.stderr
+    assert not result.stderr
 
 
 def test_run_command_file_named_dash():
@@ -667,7 +667,7 @@ def test_validate_command_with_valid_file():
         assert not result.stdout or result.stdout.strip() == ""
         
         # Verify stderr is empty for successful run
-        assert result.stderr == "" or not result.stderr
+        assert not result.stderr
         
     finally:
         os.unlink(temp_path)
