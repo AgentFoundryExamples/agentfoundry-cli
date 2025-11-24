@@ -10,19 +10,25 @@
 ├── agentfoundry_cli
   ├── __init__.py
   ├── __main__.py
-  └── cli.py
+  ├── cli.py
+  └── parser.py
 ├── docs
-  └── development.md
+  ├── development.md
+  └── format.md
 ├── repo-analysis-output
   ├── dependencies.json
   ├── dependencies.md
+  ├── file-summaries.json
+  ├── file-summaries.md
   ├── SUMMARY.md
   ├── tree.json
   └── tree.md
 ├── tests
   ├── __init__.py
-  └── test_cli.py
+  ├── test_cli.py
+  └── test_parser.py
 ├── .gitignore
+├── example.af
 ├── LICENSE
 ├── pyproject.toml
 └── README.md

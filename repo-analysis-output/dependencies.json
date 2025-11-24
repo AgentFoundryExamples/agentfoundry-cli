@@ -32,6 +32,22 @@
       }
     },
     {
+      "id": "agentfoundry_cli/parser.py",
+      "path": "agentfoundry_cli/parser.py",
+      "type": "file",
+      "external_dependencies": {
+        "stdlib": [
+          "pathlib.Path",
+          "re",
+          "typing.Any",
+          "typing.Dict",
+          "typing.List",
+          "typing.Tuple"
+        ],
+        "third-party": []
+      }
+    },
+    {
       "id": "tests/__init__.py",
       "path": "tests/__init__.py",
       "type": "file",
@@ -52,6 +68,21 @@
           "typer.testing.CliRunner"
         ]
       }
+    },
+    {
+      "id": "tests/test_parser.py",
+      "path": "tests/test_parser.py",
+      "type": "file",
+      "external_dependencies": {
+        "stdlib": [
+          "os",
+          "pathlib.Path",
+          "tempfile"
+        ],
+        "third-party": [
+          "pytest"
+        ]
+      }
     }
   ],
   "edges": [
@@ -70,18 +101,30 @@
     {
       "source": "tests/test_cli.py",
       "target": "agentfoundry_cli/__init__.py"
+    },
+    {
+      "source": "tests/test_parser.py",
+      "target": "agentfoundry_cli/parser.py"
     }
   ],
   "external_dependencies_summary": {
     "stdlib": [
+      "os",
+      "pathlib.Path",
       "re",
-      "typing.Optional"
+      "tempfile",
+      "typing.Any",
+      "typing.Dict",
+      "typing.List",
+      "typing.Optional",
+      "typing.Tuple"
     ],
     "third-party": [
+      "pytest",
       "typer",
       "typer.testing.CliRunner"
     ],
-    "stdlib_count": 2,
-    "third-party_count": 2
+    "stdlib_count": 9,
+    "third-party_count": 3
   }
 }

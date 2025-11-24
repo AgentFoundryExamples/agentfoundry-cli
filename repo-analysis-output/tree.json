@@ -51,6 +51,10 @@
         {
           "type": "file",
           "name": "cli.py"
+        },
+        {
+          "type": "file",
+          "name": "parser.py"
         }
       ]
     },
@@ -61,6 +65,10 @@
         {
           "type": "file",
           "name": "development.md"
+        },
+        {
+          "type": "file",
+          "name": "format.md"
         }
       ]
     },
@@ -75,6 +83,14 @@
         {
           "type": "file",
           "name": "dependencies.md"
+        },
+        {
+          "type": "file",
+          "name": "file-summaries.json"
+        },
+        {
+          "type": "file",
+          "name": "file-summaries.md"
         },
         {
           "type": "file",
@@ -101,12 +117,20 @@
         {
           "type": "file",
           "name": "test_cli.py"
+        },
+        {
+          "type": "file",
+          "name": "test_parser.py"
         }
       ]
     },
     {
       "type": "file",
       "name": ".gitignore"
+    },
+    {
+      "type": "file",
+      "name": "example.af"
     },
     {
       "type": "file",

@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "total_files": 5,
+  "total_files": 7,
   "files": [
     {
       "schema_version": "2.0",
@@ -83,6 +83,50 @@
     },
     {
       "schema_version": "2.0",
+      "path": "agentfoundry_cli/parser.py",
+      "language": "Python",
+      "role": "implementation",
+      "role_justification": "general implementation file (default classification)",
+      "metrics": {
+        "size_bytes": 14949,
+        "loc": 345,
+        "todo_count": 0,
+        "declaration_count": 12
+      },
+      "structure": {
+        "declarations": [
+          "class AFParseError",
+          "class AFMissingKeyError",
+          "class AFDuplicateKeyError",
+          "class AFUnknownKeyError",
+          "class AFSyntaxError",
+          "class AFEmptyValueError",
+          "function _strip_utf8_bom",
+          "function _tokenize_line",
+          "function _parse_quoted_string",
+          "function _parse_list",
+          "function parse_af_file",
+          "function validate_af_content"
+        ]
+      },
+      "dependencies": {
+        "imports": [],
+        "exports": [],
+        "external": {
+          "stdlib": [
+            "pathlib.Path",
+            "re",
+            "typing.Any",
+            "typing.Dict",
+            "typing.List",
+            "typing.Tuple"
+          ],
+          "third-party": []
+        }
+      }
+    },
+    {
+      "schema_version": "2.0",
       "path": "tests/__init__.py",
       "language": "Python",
       "role": "test",
@@ -136,6 +180,83 @@
           ],
           "third-party": [
             "typer.testing.CliRunner"
+          ]
+        }
+      }
+    },
+    {
+      "schema_version": "2.0",
+      "path": "tests/test_parser.py",
+      "language": "Python",
+      "role": "test",
+      "role_justification": "filename starts with 'test_'",
+      "metrics": {
+        "size_bytes": 21998,
+        "loc": 576,
+        "todo_count": 0,
+        "declaration_count": 46
+      },
+      "structure": {
+        "declarations": [
+          "function test_parse_valid_file",
+          "function test_parse_valid_file_with_single_quotes",
+          "function test_parse_with_apostrophes",
+          "function test_parse_with_escaped_quotes",
+          "function test_case_insensitive_keys",
+          "function test_whitespace_tolerance",
+          "function test_empty_lines_and_comments",
+          "function test_missing_purpose_key",
+          "function test_missing_vision_key",
+          "function test_missing_must_key",
+          "function test_missing_dont_key",
+          "function test_missing_nice_key",
+          "function test_duplicate_key_error",
+          "function test_duplicate_key_different_case",
+          "function test_unknown_key_error",
+          "function test_empty_string_value",
+          "function test_empty_list_value",
+          "function test_unquoted_string_value",
+          "function test_unterminated_string",
+          "function test_mismatched_quotes",
+          "function test_list_without_brackets",
+          "function test_list_missing_closing_bracket",
+          "function test_list_with_unquoted_items",
+          "function test_trailing_comma_in_list",
+          "function test_empty_list_item_rejected",
+          "function test_empty_list_item_at_start_rejected",
+          "function test_multiple_consecutive_commas_rejected",
+          "function test_stray_characters_after_string",
+          "function test_missing_colon_separator",
+          "function test_empty_key",
+          "function test_utf8_bom_handling",
+          "function test_parse_file_with_path",
+          "function test_parse_nonexistent_file",
+          "function test_parse_file_requires_af_extension",
+          "function test_parse_file_requires_extension",
+          "function test_parse_file_accepts_uppercase_af_extension",
+          "function test_error_includes_filename",
+          "function test_error_includes_line_number",
+          "function test_multiline_not_supported",
+          "function test_list_with_mixed_quotes",
+          "function test_single_item_list",
+          "function test_list_with_whitespace",
+          "function test_keys_returned_lowercase",
+          "function test_string_with_newline_escape",
+          "function test_string_with_tab_escape",
+          "function test_comprehensive_valid_file"
+        ]
+      },
+      "dependencies": {
+        "imports": [],
+        "exports": [],
+        "external": {
+          "stdlib": [
+            "os",
+            "pathlib.Path",
+            "tempfile"
+          ],
+          "third-party": [
+            "pytest"
           ]
         }
       }
