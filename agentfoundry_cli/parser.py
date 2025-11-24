@@ -21,27 +21,83 @@ Parser and validator for Agent Foundry .af files.
 
 This module provides deterministic parsing and validation utilities for .af files
 that normalize keys, enforce schema rules, and emit precise error diagnostics.
+
+Architecture:
+    The parser uses a tokenizer-driven approach for robust handling of UTF-8 input,
+    size validation, and backwards-compatible v1.0 syntax:
+    
+    1. Tokenizer: Scans input character-by-character, emitting tokens (KEY, STRING,
+       LBRACKET, RBRACKET, COMMA, COMMENT, NEWLINE, EOF) with position tracking.
+    
+    2. State Machine: Consumes tokens to build the flat purpose/vision/must/dont/nice
+       structure while maintaining canonical order and v1.0 compatibility.
+    
+    3. Input Loading: Enforces UTF-8 decoding, normalizes BOM, and rejects payloads
+       larger than 1MB with clear error messages.
+
+Guarantees:
+    - UTF-8 encoding required; BOM stripped automatically
+    - Maximum input size: 1MB (1,048,576 bytes)
+    - Deterministic token/position tracking for error reporting
+    - No eval/exec; fixed JSON output shape
 """
 
-import re
-from typing import Dict, List, Any, Tuple
+import sys
+import io
+from enum import Enum, auto
+from typing import Dict, List, Any, Tuple, Optional, TextIO
 from pathlib import Path
+from dataclasses import dataclass
+
+
+# Maximum input size: 1MB
+MAX_INPUT_SIZE = 1024 * 1024  # 1,048,576 bytes
+
+
+class TokenType(Enum):
+    """Token types for the tokenizer."""
+    KEY = auto()           # Identifier before colon
+    COLON = auto()         # :
+    STRING = auto()        # Quoted string value
+    LBRACKET = auto()      # [
+    RBRACKET = auto()      # ]
+    COMMA = auto()         # ,
+    COMMENT = auto()       # # to end of line
+    NEWLINE = auto()       # \n or \r\n
+    EOF = auto()           # End of file
+    WHITESPACE = auto()    # Spaces, tabs (not newlines)
+
+
+@dataclass
+class Token:
+    """Represents a single token with position information."""
+    type: TokenType
+    value: str
+    line: int
+    column: int
+    
+    def __repr__(self):
+        return f"Token({self.type.name}, {self.value!r}, {self.line}:{self.column})"
 
 
 class AFParseError(Exception):
     """Base exception for .af file parsing errors."""
     
-    def __init__(self, message: str, filename: str = None, line: int = None):
+    def __init__(self, message: str, filename: str = None, line: int = None, column: int = None):
         self.message = message
         self.filename = filename
         self.line = line
+        self.column = column
         
         # Build full error message with location info
         parts = []
         if filename:
             parts.append(f"File '{filename}'")
         if line is not None:
-            parts.append(f"line {line}")
+            if column is not None:
+                parts.append(f"line {line}, column {column}")
+            else:
+                parts.append(f"line {line}")
         
         if parts:
             full_message = f"{', '.join(parts)}: {message}"
@@ -76,8 +132,15 @@ class AFEmptyValueError(AFParseError):
     pass
 
 
+class AFSizeError(AFParseError):
+    """Exception raised when input exceeds size limits."""
+    pass
+
+
 # Required keys in .af files
 REQUIRED_KEYS = {'purpose', 'vision', 'must', 'dont', 'nice'}
+# Canonical key order for output
+CANONICAL_KEY_ORDER = ['purpose', 'vision', 'must', 'dont', 'nice']
 # Keys that should be strings
 STRING_KEYS = {'purpose', 'vision'}
 # Keys that should be lists
@@ -91,269 +154,603 @@ def _strip_utf8_bom(content: str) -> str:
     return content
 
 
-def _tokenize_line(line: str, line_num: int, filename: str = None) -> Tuple[str, Any]:
+def load_input(source: Optional[str] = None, stream: Optional[TextIO] = None) -> str:
     """
-    Tokenize a single line into key and value.
+    Load and validate input from file or stream with size and encoding checks.
     
+    Args:
+        source: Path to file to read (mutually exclusive with stream)
+        stream: Text stream to read from (mutually exclusive with source)
+        
     Returns:
-        Tuple of (key, value) where value can be str, list, or None for empty lines/comments
-    
+        UTF-8 decoded content with BOM stripped
+        
     Raises:
-        AFSyntaxError: If line has invalid syntax
+        AFSizeError: If input exceeds 1MB limit
+        AFParseError: If encoding is invalid
+        ValueError: If neither or both source and stream are provided
     """
-    # Strip whitespace
-    line = line.strip()
+    if (source is None) == (stream is None):
+        raise ValueError("Exactly one of source or stream must be provided")
     
-    # Skip empty lines and comments
-    if not line or line.startswith('#'):
-        return None, None
-    
-    # Check for key-value separator
-    if ':' not in line:
-        raise AFSyntaxError(
-            f"Line missing ':' separator",
-            filename=filename,
-            line=line_num
-        )
-    
-    # Split on first colon
-    key_part, value_part = line.split(':', 1)
-    key = key_part.strip().lower()
-    value_part = value_part.strip()
-    
-    # Validate key is not empty
-    if not key:
-        raise AFSyntaxError(
-            "Empty key before ':'",
-            filename=filename,
-            line=line_num
-        )
-    
-    # Check for unknown keys
-    if key not in REQUIRED_KEYS:
-        raise AFUnknownKeyError(
-            f"Unknown key '{key}' (valid keys: {', '.join(sorted(REQUIRED_KEYS))})",
-            filename=filename,
-            line=line_num
-        )
-    
-    # Parse value based on key type
-    if key in STRING_KEYS:
-        # String values - handle quoted strings
-        if not value_part:
-            raise AFEmptyValueError(
-                f"Key '{key}' has empty value",
-                filename=filename,
-                line=line_num
+    if source:
+        # Read from file
+        path = Path(source)
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {source}")
+        
+        # Check file size before reading
+        file_size = path.stat().st_size
+        if file_size > MAX_INPUT_SIZE:
+            raise AFSizeError(
+                f"Input file too large: {file_size} bytes (maximum: {MAX_INPUT_SIZE} bytes)",
+                filename=source
             )
         
-        # Parse quoted string
-        value = _parse_quoted_string(value_part, line_num, filename)
-        
-    elif key in LIST_KEYS:
-        # List values - handle list syntax
-        if not value_part:
-            raise AFEmptyValueError(
-                f"Key '{key}' has empty value",
-                filename=filename,
-                line=line_num
+        try:
+            with open(source, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except UnicodeDecodeError as e:
+            raise AFParseError(
+                f"File must be UTF-8 encoded: {e}",
+                filename=source
             )
-        
-        # Parse list
-        value = _parse_list(value_part, line_num, filename)
+    else:
+        # Read from stream
+        try:
+            # Read with size limit - try to read one byte more than the limit
+            # to detect if stream exceeds the limit
+            content = stream.read(MAX_INPUT_SIZE + 1)
+            if len(content) > MAX_INPUT_SIZE:
+                raise AFSizeError(
+                    f"Input too large: exceeds {MAX_INPUT_SIZE} bytes (1MB) limit"
+                )
+        except UnicodeDecodeError as e:
+            raise AFParseError(f"Input must be UTF-8 encoded: {e}")
     
-    return key, value
-
-
-def _parse_quoted_string(s: str, line_num: int, filename: str = None) -> str:
-    """
-    Parse a quoted string, handling both single and double quotes.
-    
-    Supports:
-    - Single quotes: 'text'
-    - Double quotes: "text"
-    - Apostrophes inside strings: "it's working"
-    - Escaped quotes: "say \"hello\""
-    
-    Raises:
-        AFSyntaxError: If string is not properly quoted or has mismatched quotes
-    """
-    s = s.strip()
-    
-    # Check if string starts with quote
-    if not s or s[0] not in ('"', "'"):
-        raise AFSyntaxError(
-            f"String value must be quoted (use \" or ')",
-            filename=filename,
-            line=line_num
+    # Verify we didn't exceed size limit after reading
+    # (encoding can expand byte size)
+    if len(content.encode('utf-8')) > MAX_INPUT_SIZE:
+        raise AFSizeError(
+            f"Input too large: exceeds {MAX_INPUT_SIZE} bytes (1MB) limit",
+            filename=source
         )
     
-    quote_char = s[0]
+    # Strip BOM if present
+    return _strip_utf8_bom(content)
+
+
+class Tokenizer:
+    """
+    Tokenizer for .af files using character-by-character scanning.
     
-    # Find matching closing quote (handle escapes)
-    i = 1
-    result = []
-    while i < len(s):
-        char = s[i]
+    Emits tokens with precise line and column position tracking for
+    error reporting.
+    """
+    
+    def __init__(self, content: str, filename: str = None):
+        self.content = content
+        self.filename = filename
+        self.pos = 0
+        self.line = 1
+        self.column = 1
         
-        if char == '\\' and i + 1 < len(s):
-            # Escape sequence
-            next_char = s[i + 1]
-            if next_char == quote_char:
-                result.append(quote_char)
-                i += 2
-            elif next_char == '\\':
-                result.append('\\')
-                i += 2
-            elif next_char == 'n':
-                result.append('\n')
-                i += 2
-            elif next_char == 't':
-                result.append('\t')
-                i += 2
-            else:
-                # Keep backslash for other cases
-                result.append('\\')
-                i += 1
-        elif char == quote_char:
-            # Found closing quote
-            # Check for stray characters after closing quote
-            remaining = s[i + 1:].strip()
-            if remaining:
-                raise AFSyntaxError(
-                    f"Unexpected characters after closing quote: '{remaining}'",
-                    filename=filename,
-                    line=line_num
-                )
-            parsed_result = ''.join(result)
-            # Check if result is empty string
-            if not parsed_result:
-                raise AFEmptyValueError(
-                    "String value cannot be empty",
-                    filename=filename,
-                    line=line_num
-                )
-            return parsed_result
+    def peek(self, offset: int = 0) -> Optional[str]:
+        """Peek at character at current position + offset without consuming."""
+        pos = self.pos + offset
+        if pos < len(self.content):
+            return self.content[pos]
+        return None
+    
+    def advance(self) -> Optional[str]:
+        """Consume and return current character, updating position."""
+        if self.pos >= len(self.content):
+            return None
+        
+        char = self.content[self.pos]
+        self.pos += 1
+        
+        # Update line/column tracking
+        if char == '\n':
+            self.line += 1
+            self.column = 1
         else:
-            result.append(char)
-            i += 1
+            self.column += 1
+        
+        return char
     
-    # Reached end without finding closing quote
-    raise AFSyntaxError(
-        f"Unterminated string (missing closing {quote_char})",
-        filename=filename,
-        line=line_num
-    )
+    def skip_whitespace(self):
+        """Skip whitespace characters (spaces and tabs, not newlines)."""
+        while self.peek() in (' ', '\t'):
+            self.advance()
+    
+    def tokenize(self) -> List[Token]:
+        """
+        Tokenize the entire input into a list of tokens.
+        
+        Returns:
+            List of tokens including position information
+        """
+        tokens = []
+        
+        while self.pos < len(self.content):
+            token = self._next_token()
+            if token:
+                tokens.append(token)
+        
+        # Add EOF token
+        tokens.append(Token(TokenType.EOF, '', self.line, self.column))
+        
+        return tokens
+    
+    def _next_token(self) -> Optional[Token]:
+        """Get the next token from the input."""
+        # Skip whitespace (spaces and tabs, not newlines)
+        self.skip_whitespace()
+        
+        if self.pos >= len(self.content):
+            return None
+        
+        start_line = self.line
+        start_col = self.column
+        char = self.peek()
+        
+        # Newline
+        if char == '\n':
+            self.advance()
+            return Token(TokenType.NEWLINE, '\n', start_line, start_col)
+        
+        # Handle \r\n or \r as newline
+        if char == '\r':
+            self.advance()
+            if self.peek() == '\n':
+                self.advance()
+            return Token(TokenType.NEWLINE, '\n', start_line, start_col)
+        
+        # Comment
+        if char == '#':
+            return self._scan_comment(start_line, start_col)
+        
+        # Colon
+        if char == ':':
+            self.advance()
+            return Token(TokenType.COLON, ':', start_line, start_col)
+        
+        # Left bracket
+        if char == '[':
+            self.advance()
+            return Token(TokenType.LBRACKET, '[', start_line, start_col)
+        
+        # Right bracket
+        if char == ']':
+            self.advance()
+            return Token(TokenType.RBRACKET, ']', start_line, start_col)
+        
+        # Comma
+        if char == ',':
+            self.advance()
+            return Token(TokenType.COMMA, ',', start_line, start_col)
+        
+        # Quoted string
+        if char in ('"', "'"):
+            return self._scan_string(start_line, start_col)
+        
+        # Key (identifier before colon)
+        if char.isalpha() or char == '_':
+            return self._scan_key(start_line, start_col)
+        
+        # Unexpected character
+        raise AFSyntaxError(
+            f"Unexpected character: {char!r}",
+            filename=self.filename,
+            line=start_line,
+            column=start_col
+        )
+    
+    def _scan_comment(self, start_line: int, start_col: int) -> Token:
+        """Scan a comment from # to end of line."""
+        value = []
+        self.advance()  # Skip #
+        
+        while self.peek() and self.peek() not in ('\n', '\r'):
+            value.append(self.advance())
+        
+        return Token(TokenType.COMMENT, ''.join(value), start_line, start_col)
+    
+    def _scan_string(self, start_line: int, start_col: int) -> Token:
+        """
+        Scan a quoted string with escape sequence handling.
+        
+        Supports:
+        - Single and double quotes
+        - Escape sequences: \\", \\', \\\\, \\n, \\t
+        """
+        quote_char = self.advance()  # Consume opening quote
+        value = []
+        
+        while True:
+            char = self.peek()
+            
+            if char is None:
+                raise AFSyntaxError(
+                    f"Unterminated string (missing closing {quote_char})",
+                    filename=self.filename,
+                    line=start_line,
+                    column=start_col
+                )
+            
+            if char == '\n' or char == '\r':
+                raise AFSyntaxError(
+                    f"Unterminated string (missing closing {quote_char})",
+                    filename=self.filename,
+                    line=start_line,
+                    column=start_col
+                )
+            
+            if char == '\\':
+                self.advance()
+                next_char = self.peek()
+                
+                if next_char is None:
+                    raise AFSyntaxError(
+                        "Incomplete escape sequence at end of input",
+                        filename=self.filename,
+                        line=self.line,
+                        column=self.column
+                    )
+                
+                # Handle escape sequences
+                if next_char == quote_char:
+                    value.append(quote_char)
+                    self.advance()
+                elif next_char == '\\':
+                    value.append('\\')
+                    self.advance()
+                elif next_char == 'n':
+                    value.append('\n')
+                    self.advance()
+                elif next_char == 't':
+                    value.append('\t')
+                    self.advance()
+                else:
+                    # Keep backslash for unknown escapes
+                    value.append('\\')
+            elif char == quote_char:
+                self.advance()  # Consume closing quote
+                break
+            else:
+                value.append(self.advance())
+        
+        string_value = ''.join(value)
+        
+        # Empty string check
+        if not string_value:
+            raise AFEmptyValueError(
+                "String value cannot be empty",
+                filename=self.filename,
+                line=start_line,
+                column=start_col
+            )
+        
+        return Token(TokenType.STRING, string_value, start_line, start_col)
+    
+    def _scan_key(self, start_line: int, start_col: int) -> Token:
+        """Scan an identifier (key name)."""
+        value = []
+        
+        while self.peek() and (self.peek().isalnum() or self.peek() in ('_', '-')):
+            value.append(self.advance())
+        
+        return Token(TokenType.KEY, ''.join(value), start_line, start_col)
 
 
-def _parse_list(s: str, line_num: int, filename: str = None) -> List[str]:
+class Parser:
     """
-    Parse a list of strings.
+    State machine parser that consumes tokens to build the .af structure.
     
-    Supports:
-    - Square bracket notation: ["item1", "item2"]
-    - Comma-separated items
-    - Quoted strings with apostrophes
-    
-    Raises:
-        AFSyntaxError: If list syntax is invalid
+    Maintains v1.0 compatibility while supporting the flat purpose/vision/must/dont/nice
+    schema with deterministic ordering.
     """
-    s = s.strip()
     
-    # Check for square brackets
-    if not s.startswith('['):
-        raise AFSyntaxError(
-            "List must start with '['",
-            filename=filename,
-            line=line_num
-        )
+    def __init__(self, tokens: List[Token], filename: str = None):
+        self.tokens = tokens
+        self.filename = filename
+        self.pos = 0
+        self.result = {}
+        self.seen_keys = {}  # Track where each key was first seen
     
-    if not s.endswith(']'):
-        raise AFSyntaxError(
-            "List must end with ']'",
-            filename=filename,
-            line=line_num
-        )
+    def peek(self, offset: int = 0) -> Optional[Token]:
+        """Peek at token at current position + offset."""
+        pos = self.pos + offset
+        if pos < len(self.tokens):
+            return self.tokens[pos]
+        return None
     
-    # Extract content between brackets
-    content = s[1:-1].strip()
+    def advance(self) -> Optional[Token]:
+        """Consume and return current token."""
+        if self.pos >= len(self.tokens):
+            return None
+        token = self.tokens[self.pos]
+        self.pos += 1
+        return token
     
-    # Empty list is not allowed for required keys
-    if not content:
-        raise AFEmptyValueError(
-            "List cannot be empty",
-            filename=filename,
-            line=line_num
-        )
+    def expect(self, token_type: TokenType) -> Token:
+        """Consume token of expected type or raise error."""
+        token = self.peek()
+        if token is None or token.type != token_type:
+            expected = token_type.name
+            actual = token.type.name if token else "EOF"
+            
+            raise AFSyntaxError(
+                f"Expected {expected}, got {actual}",
+                filename=self.filename,
+                line=token.line if token else self.tokens[-1].line,
+                column=token.column if token else self.tokens[-1].column
+            )
+        return self.advance()
     
-    # Parse comma-separated items
-    items = []
-    current_item = []
-    in_quotes = False
-    quote_char = None
-    escape_next = False
+    def skip_newlines_and_comments(self):
+        """Skip any newline and comment tokens."""
+        while self.peek() and self.peek().type in (TokenType.NEWLINE, TokenType.COMMENT):
+            self.advance()
     
-    for i, char in enumerate(content):
-        if escape_next:
-            current_item.append(char)
-            escape_next = False
-            continue
+    def parse(self) -> Dict[str, Any]:
+        """
+        Parse tokens into the .af structure.
         
-        if char == '\\':
-            escape_next = True
-            current_item.append(char)
-            continue
+        Returns:
+            Dictionary with keys in canonical order: purpose, vision, must, dont, nice
+        """
+        while self.peek() and self.peek().type != TokenType.EOF:
+            self.skip_newlines_and_comments()
+            
+            if self.peek() and self.peek().type != TokenType.EOF:
+                self._parse_line()
         
-        if char in ('"', "'") and not in_quotes:
-            in_quotes = True
-            quote_char = char
-            current_item.append(char)
-        elif char == quote_char and in_quotes:
-            in_quotes = False
-            current_item.append(char)
-            quote_char = None
-        elif char == ',' and not in_quotes:
-            # End of item
-            item_str = ''.join(current_item).strip()
-            if not item_str:
+        # Verify all required keys are present
+        missing_keys = REQUIRED_KEYS - set(self.result.keys())
+        if missing_keys:
+            # Use the last token's position for error reporting
+            last_token = self.tokens[-2] if len(self.tokens) > 1 else self.tokens[0]
+            raise AFMissingKeyError(
+                f"Missing required keys: {', '.join(sorted(missing_keys))}",
+                filename=self.filename,
+                line=last_token.line
+            )
+        
+        # Return result in canonical order
+        return {key: self.result[key] for key in CANONICAL_KEY_ORDER}
+    
+    def _parse_line(self):
+        """Parse a single key-value line."""
+        # Expect key
+        key_token = self.peek()
+        
+        # If we hit EOF or newline/comment, return
+        if not key_token or key_token.type in (TokenType.EOF, TokenType.NEWLINE, TokenType.COMMENT):
+            return
+        
+        if key_token.type != TokenType.KEY:
+            # Unexpected token - check for common cases
+            if key_token.type == TokenType.COLON:
+                raise AFSyntaxError(
+                    "Empty key before ':'",
+                    filename=self.filename,
+                    line=key_token.line,
+                    column=key_token.column
+                )
+            else:
+                raise AFSyntaxError(
+                    f"Expected key, got {key_token.type.name}",
+                    filename=self.filename,
+                    line=key_token.line,
+                    column=key_token.column
+                )
+        
+        self.advance()
+        key = key_token.value.lower()
+        
+        # Check for unknown keys
+        if key not in REQUIRED_KEYS:
+            raise AFUnknownKeyError(
+                f"Unknown key '{key}' (valid keys: {', '.join(sorted(REQUIRED_KEYS))})",
+                filename=self.filename,
+                line=key_token.line,
+                column=key_token.column
+            )
+        
+        # Check for duplicate keys
+        if key in self.result:
+            raise AFDuplicateKeyError(
+                f"Duplicate key '{key}' (first seen on line {self.seen_keys[key]})",
+                filename=self.filename,
+                line=key_token.line,
+                column=key_token.column
+            )
+        
+        # Expect colon
+        self.expect(TokenType.COLON)
+        
+        # Parse value based on key type
+        if key in STRING_KEYS:
+            value = self._parse_string_value()
+        elif key in LIST_KEYS:
+            value = self._parse_list_value()
+        else:
+            raise AFParseError(
+                f"Unknown key type for '{key}'",
+                filename=self.filename,
+                line=key_token.line
+            )
+        
+        # Store result
+        self.result[key] = value
+        self.seen_keys[key] = key_token.line
+        
+        # Skip to end of line
+        self.skip_newlines_and_comments()
+    
+    def _parse_string_value(self) -> str:
+        """Parse a string value (for purpose/vision)."""
+        token = self.peek()
+        
+        if not token or token.type != TokenType.STRING:
+            # Check if we got a KEY token (unquoted string)
+            if token and token.type == TokenType.KEY:
+                raise AFSyntaxError(
+                    f"String value must be quoted (use \" or ')",
+                    filename=self.filename,
+                    line=token.line,
+                    column=token.column
+                )
+            raise AFSyntaxError(
+                "Expected string value",
+                filename=self.filename,
+                line=token.line if token else self.tokens[-1].line,
+                column=token.column if token else self.tokens[-1].column
+            )
+        
+        self.advance()
+        
+        # Check for stray tokens after string
+        next_token = self.peek()
+        if next_token and next_token.type not in (TokenType.NEWLINE, TokenType.COMMENT, TokenType.EOF):
+            raise AFSyntaxError(
+                f"Unexpected characters after string value",
+                filename=self.filename,
+                line=next_token.line,
+                column=next_token.column
+            )
+        
+        return token.value
+    
+    def _parse_list_value(self) -> List[str]:
+        """Parse a list value (for must/dont/nice)."""
+        # Expect opening bracket
+        bracket_token = self.peek()
+        if not bracket_token or bracket_token.type != TokenType.LBRACKET:
+            # Check if we got unquoted text instead
+            if bracket_token and bracket_token.type in (TokenType.KEY, TokenType.STRING):
+                raise AFSyntaxError(
+                    "List must start with '['",
+                    filename=self.filename,
+                    line=bracket_token.line,
+                    column=bracket_token.column
+                )
+            raise AFSyntaxError(
+                "Expected list value starting with '['",
+                filename=self.filename,
+                line=bracket_token.line if bracket_token else self.tokens[-1].line,
+                column=bracket_token.column if bracket_token else self.tokens[-1].column
+            )
+        
+        self.advance()
+        
+        items = []
+        expecting_item = True  # Track if we expect an item (after [ or ,)
+        
+        while True:
+            # Skip any whitespace/newlines (though single-line for v1.0)
+            while self.peek() and self.peek().type in (TokenType.NEWLINE, TokenType.COMMENT):
+                self.advance()
+            
+            token = self.peek()
+            
+            # Check for closing bracket
+            if token and token.type == TokenType.RBRACKET:
+                # Empty list check
+                if not items and expecting_item:
+                    # We just saw [ and now ]
+                    break  # Will be handled below
+                # Trailing comma is OK (not expecting_item would be False if we just parsed an item)
+                break
+            
+            # Check for comma when expecting an item (empty item)
+            if token and token.type == TokenType.COMMA and expecting_item:
                 raise AFSyntaxError(
                     "Empty item in list (consecutive commas or missing value)",
-                    filename=filename,
-                    line=line_num
+                    filename=self.filename,
+                    line=token.line,
+                    column=token.column
                 )
-            # Parse the quoted string
-            parsed = _parse_quoted_string(item_str, line_num, filename)
-            items.append(parsed)
-            current_item = []
-        else:
-            current_item.append(char)
-    
-    # Handle last item
-    item_str = ''.join(current_item).strip()
-    if item_str:
-        # Check for trailing comma (item_str would be empty if valid trailing comma)
-        parsed = _parse_quoted_string(item_str, line_num, filename)
-        items.append(parsed)
-    elif items:  # Only error if there are items (trailing comma after items)
-        # This is actually OK - trailing comma after last item
-        pass
-    
-    # Verify we ended quotes properly
-    if in_quotes:
-        raise AFSyntaxError(
-            "Unterminated string in list",
-            filename=filename,
-            line=line_num
-        )
-    
-    if not items:
-        raise AFEmptyValueError(
-            "List cannot be empty",
-            filename=filename,
-            line=line_num
-        )
-    
-    return items
+            
+            # Expect string
+            if not token or token.type != TokenType.STRING:
+                # Check if we got an unquoted identifier
+                if token and token.type == TokenType.KEY:
+                    raise AFSyntaxError(
+                        "List items must be quoted strings",
+                        filename=self.filename,
+                        line=token.line,
+                        column=token.column
+                    )
+                if not items:
+                    raise AFEmptyValueError(
+                        "List cannot be empty",
+                        filename=self.filename,
+                        line=token.line if token else self.tokens[-1].line,
+                        column=token.column if token else self.tokens[-1].column
+                    )
+                raise AFSyntaxError(
+                    "Expected string in list",
+                    filename=self.filename,
+                    line=token.line if token else self.tokens[-1].line,
+                    column=token.column if token else self.tokens[-1].column
+                )
+            
+            self.advance()
+            items.append(token.value)
+            expecting_item = False
+            
+            # Skip whitespace
+            while self.peek() and self.peek().type in (TokenType.NEWLINE, TokenType.COMMENT):
+                self.advance()
+            
+            # Check for comma or closing bracket
+            next_token = self.peek()
+            if next_token and next_token.type == TokenType.COMMA:
+                self.advance()
+                expecting_item = True  # Now we expect another item
+            elif next_token and next_token.type == TokenType.RBRACKET:
+                break
+            else:
+                raise AFSyntaxError(
+                    "Expected comma or closing bracket in list",
+                    filename=self.filename,
+                    line=next_token.line if next_token else self.tokens[-1].line,
+                    column=next_token.column if next_token else self.tokens[-1].column
+                )
+        
+        # Expect closing bracket
+        closing_bracket = self.peek()
+        if not closing_bracket or closing_bracket.type != TokenType.RBRACKET:
+            raise AFSyntaxError(
+                "List must end with ']'",
+                filename=self.filename,
+                line=closing_bracket.line if closing_bracket else self.tokens[-1].line,
+                column=closing_bracket.column if closing_bracket else self.tokens[-1].column
+            )
+        self.advance()
+        
+        if not items:
+            raise AFEmptyValueError(
+                "List cannot be empty",
+                filename=self.filename,
+                line=closing_bracket.line,
+                column=closing_bracket.column
+            )
+        
+        # Check for stray tokens after list
+        next_token = self.peek()
+        if next_token and next_token.type not in (TokenType.NEWLINE, TokenType.COMMENT, TokenType.EOF):
+            raise AFSyntaxError(
+                f"Unexpected characters after list",
+                filename=self.filename,
+                line=next_token.line,
+                column=next_token.column
+            )
+        
+        return items
 
 
 def parse_af_file(filepath: str) -> Dict[str, Any]:
@@ -378,6 +775,7 @@ def parse_af_file(filepath: str) -> Dict[str, Any]:
         AFUnknownKeyError: When unknown keys are encountered
         AFSyntaxError: For syntax errors
         AFEmptyValueError: When required values are empty
+        AFSizeError: When file exceeds 1MB limit
         FileNotFoundError: If file doesn't exist
     """
     # Validate file exists
@@ -393,62 +791,16 @@ def parse_af_file(filepath: str) -> Dict[str, Any]:
             line=1
         )
     
-    # Read file content
-    try:
-        with open(filepath, 'r', encoding='utf-8') as f:
-            content = f.read()
-    except UnicodeDecodeError as e:
-        raise AFParseError(f"File encoding error: {e}", filename=filepath)
+    # Load content with size and encoding validation
+    content = load_input(source=filepath)
     
-    # Strip UTF-8 BOM if present
-    content = _strip_utf8_bom(content)
+    # Tokenize
+    tokenizer = Tokenizer(content, filename=filepath)
+    tokens = tokenizer.tokenize()
     
-    # Parse line by line
-    result = {}
-    seen_keys = {}  # Track where each key was first seen
-    
-    lines = content.split('\n')
-    for line_num, line in enumerate(lines, start=1):
-        try:
-            key, value = _tokenize_line(line, line_num, filepath)
-            
-            # Skip empty lines and comments
-            if key is None:
-                continue
-            
-            # Check for duplicate keys (case-insensitive)
-            if key in result:
-                raise AFDuplicateKeyError(
-                    f"Duplicate key '{key}' (first seen on line {seen_keys[key]})",
-                    filename=filepath,
-                    line=line_num
-                )
-            
-            # Store key and value
-            result[key] = value
-            seen_keys[key] = line_num
-            
-        except AFParseError:
-            # Re-raise our exceptions as-is
-            raise
-        except Exception as e:
-            # Wrap unexpected exceptions
-            raise AFParseError(
-                f"Unexpected error: {e}",
-                filename=filepath,
-                line=line_num
-            )
-    
-    # Verify all required keys are present
-    missing_keys = REQUIRED_KEYS - set(result.keys())
-    if missing_keys:
-        # Report the last line of the file as context for where to add missing keys
-        last_line = len(lines)
-        raise AFMissingKeyError(
-            f"Missing required keys: {', '.join(sorted(missing_keys))}",
-            filename=filepath,
-            line=last_line
-        )
+    # Parse
+    parser = Parser(tokens, filename=filepath)
+    result = parser.parse()
     
     return result
 
@@ -469,41 +821,74 @@ def validate_af_content(content: str, filename: str = None) -> Dict[str, Any]:
     Raises:
         AFParseError and subclasses for validation errors
     """
+    # Check size limit BEFORE stripping BOM to ensure consistency with load_input
+    if len(content.encode('utf-8')) > MAX_INPUT_SIZE:
+        raise AFSizeError(
+            f"Input too large: exceeds {MAX_INPUT_SIZE} bytes (1MB) limit",
+            filename=filename
+        )
+    
     # Strip UTF-8 BOM if present
     content = _strip_utf8_bom(content)
     
-    # Parse line by line
-    result = {}
-    seen_keys = {}
+    # Tokenize
+    tokenizer = Tokenizer(content, filename=filename)
+    tokens = tokenizer.tokenize()
     
-    lines = content.split('\n')
-    for line_num, line in enumerate(lines, start=1):
-        key, value = _tokenize_line(line, line_num, filename)
-        
-        # Skip empty lines and comments
-        if key is None:
-            continue
-        
-        # Check for duplicate keys
-        if key in result:
-            raise AFDuplicateKeyError(
-                f"Duplicate key '{key}' (first seen on line {seen_keys[key]})",
-                filename=filename,
-                line=line_num
-            )
-        
-        result[key] = value
-        seen_keys[key] = line_num
+    # Parse
+    parser = Parser(tokens, filename=filename)
+    result = parser.parse()
     
-    # Verify all required keys are present
-    missing_keys = REQUIRED_KEYS - set(result.keys())
-    if missing_keys:
-        # Report the last line of content as context
-        last_line = len(lines)
-        raise AFMissingKeyError(
-            f"Missing required keys: {', '.join(sorted(missing_keys))}",
-            filename=filename,
-            line=last_line
-        )
+    return result
+
+
+def parse_af_stdin() -> Dict[str, Any]:
+    """
+    Parse .af content from stdin.
+    
+    Returns:
+        Dictionary with normalized lowercase keys and typed values
+        
+    Raises:
+        AFParseError and subclasses for validation errors
+        AFSizeError: When input exceeds 1MB limit
+    """
+    # Check size on raw bytes before any text decoding/normalization
+    if hasattr(sys.stdin, 'buffer'):
+        # Read raw bytes from buffer to check size before normalization
+        try:
+            # Read all available bytes to check actual size
+            raw_bytes = sys.stdin.buffer.read()
+            if len(raw_bytes) > MAX_INPUT_SIZE:
+                raise AFSizeError(
+                    f"Input too large: exceeds {MAX_INPUT_SIZE} bytes (1MB) limit"
+                )
+            
+            # Decode bytes to string with UTF-8 encoding
+            try:
+                content = raw_bytes.decode('utf-8', errors='strict')
+            except UnicodeDecodeError as e:
+                raise AFParseError(f"Input must be UTF-8 encoded: {e}")
+        except Exception as e:
+            # Re-raise our exceptions as-is
+            if isinstance(e, (AFSizeError, AFParseError)):
+                raise
+            # Wrap other exceptions
+            raise AFParseError(f"Error reading from stdin: {e}")
+    else:
+        # Fallback for cases where stdin doesn't have a buffer (e.g., StringIO in tests)
+        # In test environments, we can use load_input directly
+        content = load_input(stream=sys.stdin)
+    
+    # Strip BOM if present
+    content = _strip_utf8_bom(content)
+    
+    # Tokenize
+    tokenizer = Tokenizer(content, filename="<stdin>")
+    tokens = tokenizer.tokenize()
+    
+    # Parse
+    parser = Parser(tokens, filename="<stdin>")
+    result = parser.parse()
     
     return result

@@ -23,6 +23,7 @@ Tests for the Agent Foundry .af file parser.
 import pytest
 import tempfile
 import os
+import sys
 from pathlib import Path
 
 from agentfoundry_cli.parser import (
@@ -35,6 +36,13 @@ from agentfoundry_cli.parser import (
     AFSyntaxError,
     AFEmptyValueError,
 )
+
+
+# Test constants for size limit testing
+TEST_SIZE_SAFETY_MARGIN = 100  # Safety margin to stay under limit
+TEST_SIZE_SMALL_EXCESS = 1  # Small amount over limit for boundary testing
+TEST_SIZE_LARGE_EXCESS = 10000  # Large amount over limit for clear rejection
+TEST_SIZE_MEDIUM_EXCESS = 1000  # Medium amount over limit
 
 
 # Valid .af file content for testing
@@ -759,3 +767,494 @@ nice: ["Dark mode support", "Mobile responsive design", "Real-time updates"]
     assert len(result['must']) == 3
     assert len(result['dont']) == 3
     assert len(result['nice']) == 3
+
+
+def test_utf8_with_emojis():
+    """Test that UTF-8 emojis parse without truncation."""
+    content = """
+purpose: "Build a task manager 🚀"
+vision: "Create something great 🎯✨"
+must: ["Authentication 🔐", "Database 💾"]
+dont: ["Skip tests 🚫"]
+nice: ["Dark mode 🌙"]
+"""
+    result = validate_af_content(content)
+    
+    assert result['purpose'] == "Build a task manager 🚀"
+    assert result['vision'] == "Create something great 🎯✨"
+    assert result['must'] == ["Authentication 🔐", "Database 💾"]
+    assert result['dont'] == ["Skip tests 🚫"]
+    assert result['nice'] == ["Dark mode 🌙"]
+
+
+def test_utf8_with_combining_characters():
+    """Test that combining characters parse correctly."""
+    # Combining diacriticals and other complex Unicode
+    content = """
+purpose: "Café système with naïve approach"
+vision: "Über cool 日本語 中文"
+must: ["Test α β γ", "مرحبا العالم"]
+dont: ["Skip ñ ü ö"]
+nice: ["Support 한글"]
+"""
+    result = validate_af_content(content)
+    
+    assert "Café" in result['purpose']
+    assert "naïve" in result['purpose']
+    assert "Über" in result['vision']
+    assert "日本語" in result['vision']
+    assert "α β γ" in result['must'][0]
+
+
+def test_utf8_bom_at_file_start():
+    """Test that UTF-8 BOM at file start is stripped."""
+    # UTF-8 BOM is '\ufeff'
+    content = "\ufeff" + VALID_AF_CONTENT
+    result = validate_af_content(content)
+    
+    assert result['purpose'] == "Build a task management system"
+    assert len(result) == 5
+
+
+def test_size_limit_exactly_1mb_minus_1():
+    """Test that files just under 1MB parse successfully."""
+    from agentfoundry_cli.parser import MAX_INPUT_SIZE
+    
+    # Create content that's close to but under 1MB
+    base_content = """
+purpose: "Test"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    # Calculate how much padding we need
+    base_size = len(base_content.encode('utf-8'))
+    # Leave room for the base content plus safety margin
+    padding_size = MAX_INPUT_SIZE - base_size - TEST_SIZE_SAFETY_MARGIN
+    padding = "# " + "x" * padding_size + "\n"
+    
+    content = padding + base_content
+    
+    # Verify size is under limit
+    assert len(content.encode('utf-8')) < MAX_INPUT_SIZE
+    
+    # Should parse successfully
+    result = validate_af_content(content)
+    assert result['purpose'] == "Test"
+
+
+def test_size_limit_exactly_1mb_accepted():
+    """Test that input exactly at 1MB (1,048,576 bytes) is accepted."""
+    from agentfoundry_cli.parser import MAX_INPUT_SIZE
+    
+    # Create content that's exactly 1MB
+    base_content = """purpose: "Test"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    # Calculate padding needed to reach exactly 1MB
+    base_size = len(base_content.encode('utf-8'))
+    remaining = MAX_INPUT_SIZE - base_size
+    
+    # Add padding comments to fill to exactly 1MB
+    # Each comment line is "# x\n" = 4 bytes
+    num_comment_lines = remaining // 4
+    padding = ("# x\n" * num_comment_lines)
+    
+    # Add any remaining bytes as a final comment (without newline if needed)
+    remaining_bytes = remaining % 4
+    if remaining_bytes > 0:
+        # Build the final comment to exactly fill the remaining bytes
+        padding += ('#' + ' x'[:remaining_bytes - 1])
+    
+    content = padding + base_content
+    
+    # Verify size is exactly at limit
+    actual_size = len(content.encode('utf-8'))
+    assert actual_size == MAX_INPUT_SIZE, f"Expected {MAX_INPUT_SIZE}, got {actual_size}"
+    
+    # Should parse successfully
+    result = validate_af_content(content)
+    assert result['purpose'] == "Test"
+
+
+def test_size_limit_over_1mb_rejected():
+    """Test that input over 1MB (1,048,577+ bytes) is rejected."""
+    from agentfoundry_cli.parser import MAX_INPUT_SIZE, AFSizeError
+    
+    # Create content that's over 1MB by 1 byte
+    base_content = """
+purpose: "Test"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    # Create padding to exceed 1MB
+    padding_size = MAX_INPUT_SIZE - len(base_content.encode('utf-8')) + TEST_SIZE_SMALL_EXCESS
+    padding = "# " + "x" * padding_size + "\n"
+    
+    content = padding + base_content
+    
+    # Verify size is over limit
+    assert len(content.encode('utf-8')) > MAX_INPUT_SIZE
+    
+    # Should be rejected
+    with pytest.raises(AFSizeError) as exc_info:
+        validate_af_content(content)
+    
+    assert "too large" in str(exc_info.value).lower()
+    assert "1mb" in str(exc_info.value).lower() or "1048576" in str(exc_info.value)
+
+
+def test_size_limit_exceeds_1mb_rejected():
+    """Test that input exceeding 1MB is rejected."""
+    from agentfoundry_cli.parser import MAX_INPUT_SIZE, AFSizeError
+    
+    # Create content larger than 1MB
+    base_content = """
+purpose: "Test"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    # Create padding significantly over 1MB
+    padding_size = MAX_INPUT_SIZE + TEST_SIZE_LARGE_EXCESS
+    padding = "# " + "x" * padding_size + "\n"
+    
+    content = padding + base_content
+    
+    # Should be rejected
+    with pytest.raises(AFSizeError) as exc_info:
+        validate_af_content(content)
+    
+    assert "too large" in str(exc_info.value).lower()
+
+
+def test_empty_file_rejected():
+    """Test that completely empty file is rejected."""
+    content = ""
+    
+    with pytest.raises(AFMissingKeyError) as exc_info:
+        validate_af_content(content)
+    
+    assert "missing" in str(exc_info.value).lower()
+
+
+def test_file_with_only_comments_rejected():
+    """Test that file with only comments is rejected."""
+    content = """
+# This is just a comment
+# Another comment
+# No actual content
+"""
+    
+    with pytest.raises(AFMissingKeyError) as exc_info:
+        validate_af_content(content)
+    
+    assert "missing" in str(exc_info.value).lower()
+
+
+def test_file_with_only_whitespace_rejected():
+    """Test that file with only whitespace is rejected."""
+    content = "\n\n   \n\t\n   \n"
+    
+    with pytest.raises(AFMissingKeyError) as exc_info:
+        validate_af_content(content)
+    
+    assert "missing" in str(exc_info.value).lower()
+
+
+def test_stdin_support():
+    """Test that parse_af_stdin works correctly."""
+    import io
+    from agentfoundry_cli.parser import parse_af_stdin
+    
+    # Temporarily replace stdin
+    old_stdin = sys.stdin
+    try:
+        sys.stdin = io.StringIO(VALID_AF_CONTENT)
+        result = parse_af_stdin()
+        
+        assert result['purpose'] == "Build a task management system"
+        assert result['vision'] == "Create an intuitive tool for tracking tasks"
+        assert len(result['must']) == 2
+    finally:
+        sys.stdin = old_stdin
+
+
+def test_stdin_size_limit():
+    """Test that stdin input exceeding 1MB is rejected."""
+    import io
+    from agentfoundry_cli.parser import parse_af_stdin, MAX_INPUT_SIZE, AFSizeError
+    
+    # Create content larger than 1MB
+    padding_size = MAX_INPUT_SIZE + TEST_SIZE_MEDIUM_EXCESS
+    padding = "# " + "x" * padding_size + "\n"
+    content = padding + """
+purpose: "Test"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    
+    old_stdin = sys.stdin
+    try:
+        sys.stdin = io.StringIO(content)
+        
+        with pytest.raises(AFSizeError) as exc_info:
+            parse_af_stdin()
+        
+        assert "too large" in str(exc_info.value).lower()
+    finally:
+        sys.stdin = old_stdin
+
+
+def test_file_size_check_before_parse():
+    """Test that file size is checked before attempting to parse."""
+    from agentfoundry_cli.parser import MAX_INPUT_SIZE, AFSizeError
+    
+    # Create a large file
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.af', delete=False, encoding='utf-8') as f:
+        # Write content larger than 1MB
+        padding_size = MAX_INPUT_SIZE + TEST_SIZE_MEDIUM_EXCESS
+        f.write("# " + "x" * padding_size + "\n")
+        f.write(VALID_AF_CONTENT)
+        temp_path = f.name
+    
+    try:
+        with pytest.raises(AFSizeError) as exc_info:
+            parse_af_file(temp_path)
+        
+        assert "too large" in str(exc_info.value).lower()
+        # Verify the error mentions the file size
+        assert str(MAX_INPUT_SIZE) in str(exc_info.value) or "1MB" in str(exc_info.value).upper()
+    finally:
+        os.unlink(temp_path)
+
+
+def test_load_input_requires_exactly_one_source():
+    """Test that load_input requires exactly one of source or stream."""
+    from agentfoundry_cli.parser import load_input
+    
+    # Neither source nor stream
+    with pytest.raises(ValueError):
+        load_input()
+    
+    # Both source and stream
+    import io
+    with pytest.raises(ValueError):
+        load_input(source="test.af", stream=io.StringIO("test"))
+
+
+def test_tokenizer_preserves_positions():
+    """Test that tokenizer tracks line and column positions correctly."""
+    from agentfoundry_cli.parser import Tokenizer, TokenType
+    
+    content = """purpose: "test"
+vision: "test2"
+"""
+    tokenizer = Tokenizer(content)
+    tokens = tokenizer.tokenize()
+    
+    # Find the purpose key token
+    purpose_token = [t for t in tokens if t.type == TokenType.KEY and t.value == "purpose"][0]
+    assert purpose_token.line == 1
+    assert purpose_token.column == 1
+    
+    # Find the vision key token
+    vision_token = [t for t in tokens if t.type == TokenType.KEY and t.value == "vision"][0]
+    assert vision_token.line == 2
+    assert vision_token.column == 1
+
+
+def test_error_messages_include_position():
+    """Test that error messages include precise line and column information."""
+    content = """
+purpose: "test"
+unknown_key: "value"
+vision: "test"
+must: ["test"]
+dont: ["test"]
+nice: ["test"]
+"""
+    
+    with pytest.raises(AFUnknownKeyError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include line number
+    assert "line 3" in error_msg.lower()
+    # New tokenizer includes column info
+    assert "column" in error_msg.lower()
+
+
+def test_multiline_strings_not_supported():
+    """Test that multiline strings are still not supported (newlines in strings break)."""
+    content = """
+purpose: "This is a
+multiline string"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    
+    # Should fail because newline inside string
+    with pytest.raises(AFSyntaxError):
+        validate_af_content(content)
+
+
+def test_canonical_key_order_preserved():
+    """Test that parser always returns keys in canonical order regardless of input order."""
+    from agentfoundry_cli.parser import CANONICAL_KEY_ORDER
+    
+    # Test 1: Keys in canonical order
+    content1 = """
+purpose: "Test"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result1 = validate_af_content(content1)
+    assert list(result1.keys()) == CANONICAL_KEY_ORDER
+    
+    # Test 2: Keys in random order
+    content2 = """
+nice: ["Test"]
+must: ["Test"]
+vision: "Test"
+purpose: "Test"
+dont: ["Test"]
+"""
+    result2 = validate_af_content(content2)
+    assert list(result2.keys()) == CANONICAL_KEY_ORDER
+    
+    # Test 3: Keys in reverse order
+    content3 = """
+nice: ["Test"]
+dont: ["Test"]
+must: ["Test"]
+vision: "Test"
+purpose: "Test"
+"""
+    result3 = validate_af_content(content3)
+    assert list(result3.keys()) == CANONICAL_KEY_ORDER
+    
+    # Verify all results have same key order
+    assert list(result1.keys()) == list(result2.keys()) == list(result3.keys())
+
+
+def test_parse_af_file_canonical_order():
+    """Test that parse_af_file returns keys in canonical order."""
+    from agentfoundry_cli.parser import CANONICAL_KEY_ORDER
+    
+    # Create a file with keys in non-canonical order
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.af', delete=False, encoding='utf-8') as f:
+        f.write("""
+dont: ["Skip tests"]
+nice: ["Add themes"]
+purpose: "Build a task manager"
+must: ["Complete auth"]
+vision: "Create something great"
+""")
+        temp_path = f.name
+    
+    try:
+        result = parse_af_file(temp_path)
+        # Verify keys are in canonical order
+        assert list(result.keys()) == CANONICAL_KEY_ORDER
+        
+        # Verify values are correct
+        assert result['purpose'] == "Build a task manager"
+        assert result['vision'] == "Create something great"
+        assert result['must'] == ["Complete auth"]
+        assert result['dont'] == ["Skip tests"]
+        assert result['nice'] == ["Add themes"]
+    finally:
+        os.unlink(temp_path)
+
+
+def test_validate_af_content_bom_size_consistency():
+    """Test that size limit includes BOM bytes for consistency with load_input."""
+    from agentfoundry_cli.parser import MAX_INPUT_SIZE, AFSizeError
+    
+    # BOM is 3 bytes in UTF-8
+    bom = '\ufeff'
+    bom_size = len(bom.encode('utf-8'))
+    
+    # Create content that is exactly at limit when BOM is included
+    base_content = 'purpose: "T"\nvision: "T"\nmust: ["T"]\ndont: ["T"]\nnice: ["T"]\n'
+    target_size_without_bom = MAX_INPUT_SIZE - bom_size
+    
+    # Build content to reach exact size
+    padding_needed = target_size_without_bom - len(base_content.encode('utf-8'))
+    content_without_bom = ('# x\n' * (padding_needed // 4)) + base_content
+    
+    # Fine-tune to exact size
+    while len(content_without_bom.encode('utf-8')) < target_size_without_bom:
+        content_without_bom = '#\n' + content_without_bom
+    while len(content_without_bom.encode('utf-8')) > target_size_without_bom:
+        content_without_bom = content_without_bom[1:]
+    
+    # Add BOM - total should be exactly at limit
+    content_with_bom = bom + content_without_bom
+    assert len(content_with_bom.encode('utf-8')) == MAX_INPUT_SIZE
+    
+    # Should parse successfully (at limit)
+    result = validate_af_content(content_with_bom)
+    assert result['purpose'] == 'T'
+    
+    # Add one more byte - should be rejected
+    content_over_limit = content_with_bom + 'x'
+    assert len(content_over_limit.encode('utf-8')) > MAX_INPUT_SIZE
+    
+    with pytest.raises(AFSizeError) as exc_info:
+        validate_af_content(content_over_limit)
+    
+    assert "too large" in str(exc_info.value).lower()
+
+
+def test_stdin_size_check_before_newline_normalization():
+    """Test that stdin size check uses raw bytes before CRLF normalization."""
+    from agentfoundry_cli.parser import parse_af_stdin, MAX_INPUT_SIZE, AFSizeError
+    import io
+    
+    # Create content with CRLF that exceeds limit in raw bytes
+    # but would be under limit after LF normalization
+    base = 'purpose: "T"\r\nvision: "T"\r\nmust: ["T"]\r\ndont: ["T"]\r\nnice: ["T"]\r\n'
+    padding = "# comment line\r\n"
+    
+    # Calculate how many padding lines we need to exceed 1MB
+    num_lines = (MAX_INPUT_SIZE - len(base.encode('utf-8'))) // len(padding.encode('utf-8')) + 100
+    content_crlf = (padding * num_lines) + base
+    
+    # Verify our test setup
+    size_crlf = len(content_crlf.encode('utf-8'))
+    size_lf = len(content_crlf.replace('\r\n', '\n').encode('utf-8'))
+    assert size_crlf > MAX_INPUT_SIZE, "CRLF version should exceed limit"
+    assert size_lf < MAX_INPUT_SIZE, "LF version should be under limit"
+    
+    # Mock stdin with a buffer
+    class MockStdin:
+        def __init__(self, buffer):
+            self.buffer = buffer
+    
+    old_stdin = sys.stdin
+    try:
+        stdin_buffer = io.BytesIO(content_crlf.encode('utf-8'))
+        sys.stdin = MockStdin(stdin_buffer)
+        
+        # Should be rejected based on raw byte count (CRLF)
+        with pytest.raises(AFSizeError) as exc_info:
+            parse_af_stdin()
+        
+        assert "too large" in str(exc_info.value).lower()
+    finally:
+        sys.stdin = old_stdin
