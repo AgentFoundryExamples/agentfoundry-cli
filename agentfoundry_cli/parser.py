@@ -853,17 +853,35 @@ def parse_af_stdin() -> Dict[str, Any]:
         AFParseError and subclasses for validation errors
         AFSizeError: When input exceeds 1MB limit
     """
-    # Ensure stdin is using UTF-8 encoding
-    # Create a UTF-8 text wrapper around stdin's buffer
+    # Check size on raw bytes before any text decoding/normalization
     if hasattr(sys.stdin, 'buffer'):
-        # If stdin has a buffer (normal case), wrap it with UTF-8 encoding
-        utf8_stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='strict')
+        # Read raw bytes from buffer to check size before normalization
+        try:
+            # Read up to MAX_INPUT_SIZE + 1 bytes to detect if limit is exceeded
+            raw_bytes = sys.stdin.buffer.read(MAX_INPUT_SIZE + 1)
+            if len(raw_bytes) > MAX_INPUT_SIZE:
+                raise AFSizeError(
+                    f"Input too large: exceeds {MAX_INPUT_SIZE} bytes (1MB) limit"
+                )
+            
+            # Decode bytes to string with UTF-8 encoding
+            try:
+                content = raw_bytes.decode('utf-8', errors='strict')
+            except UnicodeDecodeError as e:
+                raise AFParseError(f"Input must be UTF-8 encoded: {e}")
+        except Exception as e:
+            # Re-raise our exceptions as-is
+            if isinstance(e, (AFSizeError, AFParseError)):
+                raise
+            # Wrap other exceptions
+            raise AFParseError(f"Error reading from stdin: {e}")
     else:
         # Fallback for cases where stdin doesn't have a buffer (e.g., StringIO in tests)
-        utf8_stdin = sys.stdin
+        # In test environments, we can use load_input directly
+        content = load_input(stream=sys.stdin)
     
-    # Load from stdin with size and encoding validation
-    content = load_input(stream=utf8_stdin)
+    # Strip BOM if present
+    content = _strip_utf8_bom(content)
     
     # Tokenize
     tokenizer = Tokenizer(content, filename="<stdin>")

@@ -1219,3 +1219,42 @@ def test_validate_af_content_bom_size_consistency():
         validate_af_content(content_over_limit)
     
     assert "too large" in str(exc_info.value).lower()
+
+
+def test_stdin_size_check_before_newline_normalization():
+    """Test that stdin size check uses raw bytes before CRLF normalization."""
+    from agentfoundry_cli.parser import parse_af_stdin, MAX_INPUT_SIZE, AFSizeError
+    import io
+    
+    # Create content with CRLF that exceeds limit in raw bytes
+    # but would be under limit after LF normalization
+    base = 'purpose: "T"\r\nvision: "T"\r\nmust: ["T"]\r\ndont: ["T"]\r\nnice: ["T"]\r\n'
+    padding = "# comment line\r\n"
+    
+    # Calculate how many padding lines we need to exceed 1MB
+    num_lines = (MAX_INPUT_SIZE - len(base.encode('utf-8'))) // len(padding.encode('utf-8')) + 100
+    content_crlf = (padding * num_lines) + base
+    
+    # Verify our test setup
+    size_crlf = len(content_crlf.encode('utf-8'))
+    size_lf = len(content_crlf.replace('\r\n', '\n').encode('utf-8'))
+    assert size_crlf > MAX_INPUT_SIZE, "CRLF version should exceed limit"
+    assert size_lf < MAX_INPUT_SIZE, "LF version should be under limit"
+    
+    # Mock stdin with a buffer
+    class MockStdin:
+        def __init__(self, buffer):
+            self.buffer = buffer
+    
+    old_stdin = sys.stdin
+    try:
+        stdin_buffer = io.BytesIO(content_crlf.encode('utf-8'))
+        sys.stdin = MockStdin(stdin_buffer)
+        
+        # Should be rejected based on raw byte count (CRLF)
+        with pytest.raises(AFSizeError) as exc_info:
+            parse_af_stdin()
+        
+        assert "too large" in str(exc_info.value).lower()
+    finally:
+        sys.stdin = old_stdin
