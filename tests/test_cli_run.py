@@ -537,3 +537,253 @@ def test_run_command_stdout_stderr_separation():
         
     finally:
         os.unlink(temp_path)
+
+
+# Tests for stdin reading via `af run -`
+
+def test_run_command_stdin_valid():
+    """Test af run - with valid .af content from stdin."""
+    result = runner.invoke(app, ["run", "-"], input=VALID_AF_CONTENT)
+    
+    # Check exit code
+    assert result.exit_code == 0
+    
+    # Parse JSON output
+    output_data = json.loads(result.stdout)
+    
+    # Verify canonical key order
+    keys = list(output_data.keys())
+    assert keys == ['purpose', 'vision', 'must', 'dont', 'nice']
+    
+    # Verify content
+    assert output_data['purpose'] == "Build a task management system"
+    assert output_data['vision'] == "Create an intuitive tool for tracking tasks"
+
+
+def test_run_command_stdin_with_syntax_error():
+    """Test af run - with invalid .af content from stdin."""
+    invalid_content = """
+purpose: Build without quotes
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = runner.invoke(app, ["run", "-"], input=invalid_content)
+    
+    # Check exit code
+    assert result.exit_code == 1
+    
+    # Verify error message
+    output = result.stdout + (result.stderr or "")
+    assert "error" in output.lower()
+
+
+def test_run_command_stdin_with_missing_key():
+    """Test af run - with content missing a required key."""
+    content = """
+purpose: "Build a task manager"
+vision: "Create something great"
+must: ["Complete auth"]
+dont: ["Skip tests"]
+"""
+    # Missing 'nice' key
+    
+    result = runner.invoke(app, ["run", "-"], input=content)
+    
+    # Check exit code
+    assert result.exit_code == 1
+    
+    # Verify error message
+    output = result.stdout + (result.stderr or "")
+    assert "missing" in output.lower()
+    assert "nice" in output.lower()
+
+
+def test_run_command_stdin_no_trailing_newline():
+    """Test af run - with input that has no trailing newline."""
+    content = 'purpose: "Test"\nvision: "Test"\nmust: ["Test"]\ndont: ["Test"]\nnice: ["Test"]'
+    
+    result = runner.invoke(app, ["run", "-"], input=content)
+    
+    # Check exit code - should succeed
+    assert result.exit_code == 0
+    
+    # Parse JSON output
+    output_data = json.loads(result.stdout)
+    assert output_data['purpose'] == "Test"
+
+
+def test_run_command_stdin_empty_input():
+    """Test af run - with empty stdin."""
+    result = runner.invoke(app, ["run", "-"], input="")
+    
+    # Check exit code
+    assert result.exit_code == 1
+    
+    # Verify error message
+    output = result.stdout + (result.stderr or "")
+    assert "missing" in output.lower()
+
+
+def test_run_command_stdin_json_only_stdout():
+    """Test that stdout contains only JSON when reading from stdin."""
+    result = runner.invoke(app, ["run", "-"], input=VALID_AF_CONTENT)
+    
+    # Check exit code
+    assert result.exit_code == 0
+    
+    # Verify stdout is valid JSON (no extra text)
+    output_data = json.loads(result.stdout)
+    assert output_data is not None
+    
+    # Verify stderr is empty for successful run
+    assert result.stderr == "" or not result.stderr
+
+
+def test_run_command_file_named_dash():
+    """Test that a file literally named '-' would need to be escaped."""
+    # If user has a file named '-', they should use './-' to disambiguate
+    # This test verifies that '-' alone is treated as stdin indicator
+    result = runner.invoke(app, ["run", "-"], input=VALID_AF_CONTENT)
+    assert result.exit_code == 0
+
+
+# Tests for `af validate` command
+
+def test_validate_command_with_valid_file():
+    """Test af validate with a valid .af file."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.af', delete=False, encoding='utf-8') as f:
+        f.write(VALID_AF_CONTENT)
+        temp_path = f.name
+    
+    try:
+        result = runner.invoke(app, ["validate", temp_path])
+        
+        # Check exit code - should be 0 for valid file
+        assert result.exit_code == 0
+        
+        # Verify stdout is empty (silent on success)
+        assert not result.stdout or result.stdout.strip() == ""
+        
+        # Verify stderr is empty for successful run
+        assert result.stderr == "" or not result.stderr
+        
+    finally:
+        os.unlink(temp_path)
+
+
+def test_validate_command_with_invalid_file():
+    """Test af validate with an invalid .af file."""
+    content = """
+purpose: "Build a task manager"
+vision: "Create something great"
+must: ["Complete auth"]
+dont: ["Skip tests"]
+"""
+    # Missing 'nice' key
+    
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.af', delete=False, encoding='utf-8') as f:
+        f.write(content)
+        temp_path = f.name
+    
+    try:
+        result = runner.invoke(app, ["validate", temp_path])
+        
+        # Check exit code - should be 1 for invalid file
+        assert result.exit_code == 1
+        
+        # Verify error message is in stderr
+        assert result.stderr is not None and result.stderr.strip() != ""
+        assert "error" in result.stderr.lower() or "missing" in result.stderr.lower()
+        
+    finally:
+        os.unlink(temp_path)
+
+
+def test_validate_command_with_missing_file():
+    """Test af validate with a non-existent file."""
+    result = runner.invoke(app, ["validate", "/nonexistent/path/file.af"])
+    
+    # Check exit code
+    assert result.exit_code == 1
+    
+    # Verify error message
+    output = result.stdout + (result.stderr or "")
+    assert "not found" in output.lower()
+
+
+def test_validate_command_stdin_valid():
+    """Test af validate - with valid .af content from stdin."""
+    result = runner.invoke(app, ["validate", "-"], input=VALID_AF_CONTENT)
+    
+    # Check exit code - should be 0 for valid input
+    assert result.exit_code == 0
+    
+    # Verify stdout is empty (silent on success)
+    assert not result.stdout or result.stdout.strip() == ""
+
+
+def test_validate_command_stdin_invalid():
+    """Test af validate - with invalid .af content from stdin."""
+    invalid_content = """
+purpose: Build without quotes
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = runner.invoke(app, ["validate", "-"], input=invalid_content)
+    
+    # Check exit code - should be 1 for invalid input
+    assert result.exit_code == 1
+    
+    # Verify error message is in stderr
+    assert result.stderr is not None and result.stderr.strip() != ""
+
+
+def test_validate_command_help():
+    """Test af validate --help displays help text."""
+    result = runner.invoke(app, ["validate", "--help"])
+    
+    # Check exit code
+    assert result.exit_code == 0
+    
+    # Verify help text
+    assert "validate" in result.stdout.lower()
+    assert "ci" in result.stdout.lower() or "silent" in result.stdout.lower() or "suppress" in result.stdout.lower()
+
+
+def test_validate_command_ci_workflow():
+    """Test that af validate works correctly in CI workflow (exit code only)."""
+    # Valid file - should exit 0
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.af', delete=False, encoding='utf-8') as f:
+        f.write(VALID_AF_CONTENT)
+        temp_path_valid = f.name
+    
+    # Invalid file - should exit 1
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.af', delete=False, encoding='utf-8') as f:
+        f.write('purpose: "Test"\nvision: "Test"\nmust: ["Test"]\ndont: ["Test"]')  # Missing nice
+        temp_path_invalid = f.name
+    
+    try:
+        result_valid = runner.invoke(app, ["validate", temp_path_valid])
+        result_invalid = runner.invoke(app, ["validate", temp_path_invalid])
+        
+        # Valid file returns 0, invalid returns 1
+        assert result_valid.exit_code == 0
+        assert result_invalid.exit_code == 1
+        
+        # Valid file has no stdout
+        assert not result_valid.stdout or result_valid.stdout.strip() == ""
+        
+    finally:
+        os.unlink(temp_path_valid)
+        os.unlink(temp_path_invalid)
+
+
+def test_validate_command_in_help():
+    """Test that validate command appears in main help output."""
+    result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    assert "validate" in result.stdout.lower()

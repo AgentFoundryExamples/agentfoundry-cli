@@ -212,6 +212,37 @@ Validate a configuration file:
 af run agent.af
 ```
 
+### Silent Validation with `af validate`
+
+For CI/CD pipelines where you only need the exit code, use `af validate`:
+
+```bash
+# Validate silently - no output on success
+af validate agent.af
+
+# Use in shell conditionals
+if af validate agent.af; then
+    echo "Configuration is valid"
+    deploy_application
+else
+    echo "Configuration is invalid"
+    exit 1
+fi
+
+# Validate from stdin
+cat config.af | af validate -
+```
+
+**Exit Codes:**
+- `0` - Valid: the file parsed successfully
+- `1` - Invalid: validation or parsing failure
+- `2` - Usage error: missing required arguments
+
+**Differences from `af run`:**
+- Suppresses stdout on success (silent mode)
+- Only writes to stderr on errors
+- Ideal for CI/CD where you only check exit codes
+
 ### Extract Specific Fields with jq
 
 ```bash
@@ -230,7 +261,18 @@ af run agent.af | jq -r '.dont | join(", ")'
 
 ### Validation in CI/CD
 
-Use in a build script:
+Use `af validate` in build scripts for clean CI logs:
+```bash
+#!/bin/bash
+set -e
+
+echo "Validating agent configuration..."
+af validate config/agent.af
+
+echo "Configuration valid!"
+```
+
+Or with `af run` if you need the output:
 ```bash
 #!/bin/bash
 set -e
@@ -259,7 +301,7 @@ Validate multiple files:
 ```bash
 for file in configs/*.af; do
     echo "Validating $file..."
-    if af run "$file" > /dev/null; then
+    if af validate "$file"; then
         echo "  ✓ Valid"
     else
         echo "  ✗ Invalid"
@@ -271,14 +313,27 @@ done
 
 ### Reading from stdin
 
-The parser supports reading from stdin, enabling pipeline workflows:
+Use `-` as the file argument to read from stdin, enabling pipeline workflows:
 
-**Note:** The current `af run` command requires a file path. To use stdin support programmatically:
+```bash
+# Pipe content directly
+echo 'purpose: "Test"
+vision: "Test"
+must: ["Item"]
+dont: ["Item"]
+nice: ["Item"]' | af run -
 
-```python
-from agentfoundry_cli.parser import parse_af_stdin
+# Pipe a file through stdin
+cat config.af | af run -
 
-result = parse_af_stdin()
+# Use with heredoc
+af run - <<EOF
+purpose: "Dynamic config"
+vision: "Generated at runtime"
+must: ["Feature 1"]
+dont: ["Skip tests"]
+nice: ["Polish UI"]
+EOF
 ```
 
 **stdin Guarantees:**
@@ -287,19 +342,11 @@ result = parse_af_stdin()
 - Same BOM stripping behavior
 - Same validation and error reporting
 
-**Example use case:**
-```bash
-# Generate .af content dynamically and parse it
-echo 'purpose: "Test"
-vision: "Test"
-must: ["Item"]
-dont: ["Item"]
-nice: ["Item"]' | python -c "
+**Programmatic Usage:**
+```python
 from agentfoundry_cli.parser import parse_af_stdin
-import json
+
 result = parse_af_stdin()
-print(json.dumps(result, indent=2))
-"
 ```
 
 ### Handling Large Files
