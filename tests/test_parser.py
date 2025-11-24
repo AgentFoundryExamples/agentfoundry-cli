@@ -1736,3 +1736,25 @@ vision: "Test"
     # Should include caret indicator
     assert "^" in error_msg
     assert "missing" in error_msg.lower()
+
+
+def test_empty_input_has_caret():
+    """Test that empty input errors include caret indicator (P1 fix)."""
+    with pytest.raises(AFMissingKeyError) as exc_info:
+        validate_af_content('')
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator even for empty input
+    assert "^" in error_msg
+    assert "missing" in error_msg.lower()
+
+
+def test_whitespace_only_input_has_caret():
+    """Test that whitespace-only input errors include caret indicator (P1 fix)."""
+    with pytest.raises(AFMissingKeyError) as exc_info:
+        validate_af_content('   \n\n   ')
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator even for whitespace-only input
+    assert "^" in error_msg
+    assert "missing" in error_msg.lower()
