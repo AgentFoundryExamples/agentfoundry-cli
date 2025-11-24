@@ -1,5 +1,7 @@
 # Agent Foundry File Format (.af)
 
+**Version: 1.0.0 (MVP Release)**
+
 This document describes the syntax and structure of Agent Foundry `.af` files used to define agent configurations.
 
 ## Overview

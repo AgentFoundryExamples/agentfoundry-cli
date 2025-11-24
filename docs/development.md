@@ -1,5 +1,7 @@
 # Development Guide
 
+**Version: 1.0.0 (MVP Release)**
+
 This document provides guidelines for developing and contributing to the Agent Foundry CLI.
 
 ## Setup Development Environment
@@ -79,11 +81,18 @@ python agentfoundry_cli/cli.py --help
 
 ## Testing
 
+The project has comprehensive test coverage with 76+ tests covering all core functionality.
+
 ### Running Tests
 
 Execute all tests with pytest:
 ```bash
 pytest
+```
+
+Run tests with verbose output:
+```bash
+pytest -v
 ```
 
 Run tests with coverage:
@@ -94,7 +103,23 @@ pytest --cov=agentfoundry_cli --cov-report=term-missing
 Run specific test files:
 ```bash
 pytest tests/test_cli.py
+pytest tests/test_parser.py
+pytest tests/test_cli_run.py
 ```
+
+Run tests matching a pattern:
+```bash
+pytest -k "test_run_command"
+```
+
+### Test Coverage
+
+Current test suite includes:
+- **CLI commands**: Testing all CLI commands (run, version, help, hello)
+- **Parser validation**: Testing `.af` file parsing logic
+- **Error handling**: Testing all error scenarios with proper messages
+- **Integration tests**: End-to-end workflow validation
+- **Edge cases**: Large files, different encodings, line endings
 
 ### Writing Tests
 
@@ -224,13 +249,79 @@ af = "agentfoundry_cli.cli:main"
 
 This tells setuptools to create a console script that calls the `main()` function in `agentfoundry_cli.cli`.
 
+## Version Management
+
+### Version Synchronization
+
+The project version must be kept in sync across multiple files to prevent release confusion:
+
+**Required files to update:**
+1. `pyproject.toml` - `version` field under `[project]`
+2. `agentfoundry_cli/__init__.py` - `__version__` variable
+
+**Example update process:**
+```bash
+# Update version in pyproject.toml
+# version = "X.Y.Z"
+
+# Update version in agentfoundry_cli/__init__.py
+# __version__ = "X.Y.Z"
+
+# Verify the version is correct
+af version
+```
+
+### Versioning Guidelines
+
+This project follows [Semantic Versioning](https://semver.org/):
+- **MAJOR version (X.0.0)**: Incompatible API changes
+- **MINOR version (0.X.0)**: New functionality in a backward-compatible manner
+- **PATCH version (0.0.X)**: Backward-compatible bug fixes
+
+### Release Process
+
+When preparing a new release:
+
+1. **Update version numbers** in both `pyproject.toml` and `agentfoundry_cli/__init__.py`
+2. **Update CHANGELOG.md** with the new version section:
+   - Document new features, changes, fixes, etc.
+   - Add release date
+   - Update version history links
+3. **Update documentation** if needed:
+   - README.md version references
+   - Documentation version headers if significant changes
+4. **Run tests** to ensure no regressions:
+   ```bash
+   pytest -v
+   ```
+5. **Verify CLI version** command returns correct version:
+   ```bash
+   af version
+   ```
+6. **Commit and tag** the release:
+   ```bash
+   git commit -m "Release version X.Y.Z"
+   git tag -a vX.Y.Z -m "Version X.Y.Z"
+   ```
+
+### Changelog Template
+
+Use the template provided in `CHANGELOG.md` for documenting future releases. Each entry should include:
+- Version number and date
+- Added features
+- Changed functionality
+- Deprecated features
+- Removed features
+- Fixed bugs
+- Security updates
+
 ## Future Development
 
 Areas for future enhancement:
-- **Parser Features**: Implement parsing logic for agent definitions
-- **Run Command**: Add `af run` for executing agent workflows
-- **Configuration**: Support for config files and environment variables
-- **Plugins**: Extensible plugin system for custom commands
+- **Agent Execution**: Currently `af run` parses and validates files; future versions could execute agent workflows via integration with execution platforms
+- **Additional Management Commands**: Extend CLI with commands for agent lifecycle management, monitoring, and orchestration
+- **Configuration**: Support for global/local config files and environment variables
+- **Plugins**: Extensible plugin system for custom commands and parsers
 - **Shell Completion**: Pre-configured completions for bash, zsh, fish
 
 ## Troubleshooting

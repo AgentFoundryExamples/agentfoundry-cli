@@ -1,5 +1,9 @@
 # Agent Foundry CLI
 
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
+[![License](https://img.shields.io/badge/license-GPLv3-green.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
+
 Command-line interface for Agent Foundry, providing the `af` command for managing and running agent workflows.
 
 ## Features
@@ -9,10 +13,13 @@ Command-line interface for Agent Foundry, providing the `af` command for managin
 - 🎨 Rich terminal output with color support
 - 🔌 Extensible command structure for future features
 - 📝 Parser and validator for `.af` (Agent Foundry) configuration files
+- ✅ Comprehensive test suite with 76+ tests
 
 ## Installation
 
-### From Source (Development)
+### From Source (Editable Mode for Development)
+
+Editable mode allows you to make changes to the code and see them reflected immediately without reinstalling.
 
 1. Clone the repository:
 ```bash
@@ -31,11 +38,26 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -e ".[dev]"
 ```
 
-### From PyPI (Future)
+### From PyPI (Future Published Package)
 
-Once published:
+Once published to PyPI, you can install the package directly:
 ```bash
 pip install agentfoundry-cli
+```
+
+### Upgrading
+
+#### Editable Mode Installation
+If installed in editable mode, simply pull the latest changes:
+```bash
+git pull origin main
+```
+No reinstall needed - changes are reflected immediately.
+
+#### PyPI Installation (Future)
+Upgrade to the latest published version:
+```bash
+pip install --upgrade agentfoundry-cli
 ```
 
 ## Usage
@@ -168,7 +190,18 @@ The CLI uses Typer's rich output by default. In environments without color suppo
 
 ## Documentation
 
-For development and contribution guidelines, see [docs/development.md](docs/development.md).
+Complete documentation is available:
+
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and release notes
+- **[docs/usage.md](docs/usage.md)** - Detailed usage guide with examples and workflows
+- **[docs/format.md](docs/format.md)** - Complete `.af` file format specification
+- **[docs/development.md](docs/development.md)** - Development and contribution guidelines
+
+## Version Information
+
+Current version: **1.0.0** (MVP Release)
+
+This is the initial MVP release of Agent Foundry CLI. See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and the complete feature set.
 
 
 
