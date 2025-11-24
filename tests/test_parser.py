@@ -1480,3 +1480,94 @@ nice: ["Test"]
     assert "unknwon" in error_msg
     # Should include caret indicator
     assert "^" in error_msg
+
+
+def test_newline_separated_items_without_commas():
+    """Test that list items can be separated by newlines without commas (P1 fix)."""
+    content = """
+purpose: "Test"
+vision: "Test"
+must: [
+    "Item 1"
+    "Item 2"
+    "Item 3"
+]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['must'] == ["Item 1", "Item 2", "Item 3"]
+
+
+def test_newline_separated_with_mixed_commas():
+    """Test that list items can mix newlines and commas."""
+    content = """
+purpose: "Test"
+vision: "Test"
+must: [
+    "Item 1",
+    "Item 2"
+    "Item 3"
+]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['must'] == ["Item 1", "Item 2", "Item 3"]
+
+
+def test_duplicate_key_error_has_caret(capsys):
+    """Test that duplicate key errors include caret indicator (P2 fix)."""
+    content = """
+purpose: "Test"
+purpose: "Duplicate"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFDuplicateKeyError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    # Should include the source line
+    assert 'purpose: "Duplicate"' in error_msg
+
+
+def test_empty_key_error_has_caret():
+    """Test that empty key errors include caret indicator (P2 fix)."""
+    content = """
+: "Test"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFSyntaxError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    # Should include the source line
+    assert ': "Test"' in error_msg
+
+
+def test_unquoted_string_error_has_caret():
+    """Test that unquoted string errors include caret indicator (P2 fix)."""
+    content = """
+purpose: Build a task manager
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFSyntaxError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    assert "quoted" in error_msg.lower()

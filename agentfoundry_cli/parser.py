@@ -620,14 +620,16 @@ class Parser:
                     "Empty key before ':'",
                     filename=self.filename,
                     line=key_token.line,
-                    column=key_token.column
+                    column=key_token.column,
+                    source_line=self._get_source_line(key_token.line)
                 )
             else:
                 raise AFSyntaxError(
                     f"Expected key, got {key_token.type.name}",
                     filename=self.filename,
                     line=key_token.line,
-                    column=key_token.column
+                    column=key_token.column,
+                    source_line=self._get_source_line(key_token.line)
                 )
         
         self.advance()
@@ -654,7 +656,8 @@ class Parser:
                 f"Duplicate key '{key}' (first seen on line {self.seen_keys[key]})",
                 filename=self.filename,
                 line=key_token.line,
-                column=key_token.column
+                column=key_token.column,
+                source_line=self._get_source_line(key_token.line)
             )
         
         # Expect colon
@@ -690,13 +693,15 @@ class Parser:
                     f"String value must be quoted (use \" or ')",
                     filename=self.filename,
                     line=token.line,
-                    column=token.column
+                    column=token.column,
+                    source_line=self._get_source_line(token.line)
                 )
             raise AFSyntaxError(
                 "Expected string value",
                 filename=self.filename,
                 line=token.line if token else self.tokens[-1].line,
-                column=token.column if token else self.tokens[-1].column
+                column=token.column if token else self.tokens[-1].column,
+                source_line=self._get_source_line(token.line) if token else None
             )
         
         self.advance()
@@ -708,7 +713,8 @@ class Parser:
                 f"Unexpected characters after string value",
                 filename=self.filename,
                 line=next_token.line,
-                column=next_token.column
+                column=next_token.column,
+                source_line=self._get_source_line(next_token.line)
             )
         
         return token.value
@@ -724,13 +730,15 @@ class Parser:
                     "List must start with '['",
                     filename=self.filename,
                     line=bracket_token.line,
-                    column=bracket_token.column
+                    column=bracket_token.column,
+                    source_line=self._get_source_line(bracket_token.line)
                 )
             raise AFSyntaxError(
                 "Expected list value starting with '['",
                 filename=self.filename,
                 line=bracket_token.line if bracket_token else self.tokens[-1].line,
-                column=bracket_token.column if bracket_token else self.tokens[-1].column
+                column=bracket_token.column if bracket_token else self.tokens[-1].column,
+                source_line=self._get_source_line(bracket_token.line) if bracket_token else None
             )
         
         self.advance()
@@ -760,7 +768,8 @@ class Parser:
                     "Empty item in list (consecutive commas or missing value)",
                     filename=self.filename,
                     line=token.line,
-                    column=token.column
+                    column=token.column,
+                    source_line=self._get_source_line(token.line)
                 )
             
             # Expect string
@@ -771,20 +780,23 @@ class Parser:
                         "List items must be quoted strings",
                         filename=self.filename,
                         line=token.line,
-                        column=token.column
+                        column=token.column,
+                        source_line=self._get_source_line(token.line)
                     )
                 if not items:
                     raise AFEmptyValueError(
                         "List cannot be empty",
                         filename=self.filename,
                         line=token.line if token else self.tokens[-1].line,
-                        column=token.column if token else self.tokens[-1].column
+                        column=token.column if token else self.tokens[-1].column,
+                        source_line=self._get_source_line(token.line) if token else None
                     )
                 raise AFSyntaxError(
                     "Expected string in list",
                     filename=self.filename,
                     line=token.line if token else self.tokens[-1].line,
-                    column=token.column if token else self.tokens[-1].column
+                    column=token.column if token else self.tokens[-1].column,
+                    source_line=self._get_source_line(token.line) if token else None
                 )
             
             self.advance()
@@ -795,19 +807,24 @@ class Parser:
             while self.peek() and self.peek().type in (TokenType.NEWLINE, TokenType.COMMENT):
                 self.advance()
             
-            # Check for comma or closing bracket
+            # Check for comma, closing bracket, or another item (newline-separated)
             next_token = self.peek()
             if next_token and next_token.type == TokenType.COMMA:
                 self.advance()
                 expecting_item = True  # Now we expect another item
             elif next_token and next_token.type == TokenType.RBRACKET:
                 break
+            elif next_token and next_token.type == TokenType.STRING:
+                # Newline-separated item (no comma required)
+                expecting_item = True
+                continue
             else:
                 raise AFSyntaxError(
-                    "Expected comma or closing bracket in list",
+                    "Expected comma, closing bracket, or list item in list",
                     filename=self.filename,
                     line=next_token.line if next_token else self.tokens[-1].line,
-                    column=next_token.column if next_token else self.tokens[-1].column
+                    column=next_token.column if next_token else self.tokens[-1].column,
+                    source_line=self._get_source_line(next_token.line) if next_token else None
                 )
         
         # Expect closing bracket
@@ -817,7 +834,8 @@ class Parser:
                 "List must end with ']'",
                 filename=self.filename,
                 line=closing_bracket.line if closing_bracket else self.tokens[-1].line,
-                column=closing_bracket.column if closing_bracket else self.tokens[-1].column
+                column=closing_bracket.column if closing_bracket else self.tokens[-1].column,
+                source_line=self._get_source_line(closing_bracket.line) if closing_bracket else None
             )
         self.advance()
         
@@ -826,7 +844,8 @@ class Parser:
                 "List cannot be empty",
                 filename=self.filename,
                 line=closing_bracket.line,
-                column=closing_bracket.column
+                column=closing_bracket.column,
+                source_line=self._get_source_line(closing_bracket.line)
             )
         
         # Check for stray tokens after list
@@ -836,7 +855,8 @@ class Parser:
                 f"Unexpected characters after list",
                 filename=self.filename,
                 line=next_token.line,
-                column=next_token.column
+                column=next_token.column,
+                source_line=self._get_source_line(next_token.line)
             )
         
         return items
