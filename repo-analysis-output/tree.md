@@ -32,6 +32,7 @@
   ├── test_cli_run.py
   └── test_parser.py
 ├── .gitignore
+├── CHANGELOG.md
 ├── example.af
 ├── LICENSE
 ├── pyproject.toml

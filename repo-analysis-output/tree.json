@@ -148,6 +148,10 @@
     },
     {
       "type": "file",
+      "name": "CHANGELOG.md"
+    },
+    {
+      "type": "file",
       "name": "example.af"
     },
     {
