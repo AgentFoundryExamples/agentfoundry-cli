@@ -46,11 +46,61 @@ After installation, the `af` command will be available:
 # Display help
 af --help
 
+# Parse and validate an Agent Foundry file
+af run examples/example.af
+
 # Say hello (example command)
 af hello
 
 # Display version
 af version
+```
+
+### Running Agent Foundry Files
+
+The `af run` command parses and validates `.af` files, outputting canonical JSON:
+
+```bash
+af run examples/example.af
+```
+
+The command will:
+- Validate the file has a `.af` extension
+- Parse and validate the syntax and structure
+- Output canonical JSON with ordered keys to stdout
+- Exit with code 0 on success, non-zero on errors
+- Display human-readable error messages with filename and line numbers on stderr
+
+Example output:
+```json
+{
+  "purpose": "Build a comprehensive task management system",
+  "vision": "Create an intuitive and powerful tool for tracking team tasks and projects",
+  "must": [
+    "User authentication and authorization",
+    "Task creation, editing, and deletion",
+    "Data persistence with database",
+    "Input validation and error handling"
+  ],
+  "dont": [
+    "Skip security best practices",
+    "Ignore input validation",
+    "Forget error handling",
+    "Deploy without testing"
+  ],
+  "nice": [
+    "Dark mode support",
+    "Mobile responsive design",
+    "Real-time collaboration",
+    "Email notifications",
+    "Advanced search and filtering"
+  ]
+}
+```
+
+You can pipe the output to other tools like `jq`:
+```bash
+af run examples/example.af | jq '.purpose'
 ```
 
 ### Alternative Invocation
@@ -67,8 +117,8 @@ python agentfoundry_cli/cli.py --help
 
 ## Upcoming Features
 
-- **`af run`** command for executing agent workflows (coming soon!)
 - Additional commands for agent management and configuration
+- Integration with agent execution platforms
 
 ## Agent Foundry Files
 
@@ -90,7 +140,7 @@ dont: ["Skip error handling", "Ignore security"]
 nice: ["Dark mode", "Mobile support"]
 ```
 
-For detailed syntax and format specification, see [docs/format.md](docs/format.md). A complete example is available in [example.af](example.af).
+For detailed syntax and format specification, see [docs/format.md](docs/format.md). A complete example is available in [examples/example.af](examples/example.af).
 
 ### Using the Parser
 
