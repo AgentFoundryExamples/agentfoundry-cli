@@ -39,6 +39,19 @@ def hello(
 
 
 @app.command()
+def run():
+    """
+    Run an agent workflow (coming soon).
+    
+    This command will execute agent workflows based on configuration files.
+    Currently under development.
+    """
+    typer.echo("⚠️  The 'run' command is not yet implemented.")
+    typer.echo("This feature is coming soon and will execute agent workflows.")
+    raise typer.Exit(1)
+
+
+@app.command()
 def version():
     """
     Display the version of the Agent Foundry CLI.

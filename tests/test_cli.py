@@ -45,3 +45,20 @@ def test_version_format():
     import re
     # Check version format is semantic versioning (e.g., 0.1.0, 1.2.3)
     assert re.match(r"^\d+\.\d+\.\d+$", __version__)
+
+
+def test_run_command_stub():
+    """Test that run command stub exists and provides informative message."""
+    result = runner.invoke(app, ["run"])
+    assert result.exit_code == 1  # Should exit with error since not implemented
+    assert "not yet implemented" in result.stdout
+    assert "coming soon" in result.stdout.lower()
+
+
+def test_run_command_in_help():
+    """Test that run command appears in main help output."""
+    result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    assert "run" in result.stdout.lower()
+    assert "workflow" in result.stdout.lower()
+
