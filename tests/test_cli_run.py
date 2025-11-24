@@ -521,13 +521,18 @@ def test_run_command_stdout_stderr_separation():
         # stdout should be valid JSON
         json.loads(result.stdout)
         
-        # Test error case - stdout should be empty or minimal, errors in stderr or output
+        # Test error case - errors should go to stderr, stdout should be empty
         result_error = runner.invoke(app, ["run", "/nonexistent.af"])
         assert result_error.exit_code == 1
         
-        # Error message should be present somewhere
-        output = result_error.stdout + (result_error.stderr or "")
-        assert "error" in output.lower() or "not found" in output.lower()
+        # Assert stderr contains the error message
+        assert result_error.stderr, "stderr should not be empty for error case"
+        assert "error" in result_error.stderr.lower() or "not found" in result_error.stderr.lower(), \
+            "stderr should contain error message"
+        
+        # Assert stdout is empty or has no content in error case
+        assert not result_error.stdout or result_error.stdout.strip() == "", \
+            "stdout should be empty for error case to keep it clean for piping"
         
     finally:
         os.unlink(temp_path)
