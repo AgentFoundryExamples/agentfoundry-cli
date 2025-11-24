@@ -30,6 +30,10 @@ from pathlib import Path
 from agentfoundry_cli import __version__
 from agentfoundry_cli.parser import parse_af_file, AFParseError
 
+# Canonical key order for JSON output
+CANONICAL_KEY_ORDER = ['purpose', 'vision', 'must', 'dont', 'nice']
+
+
 # Create the main Typer app
 app = typer.Typer(
     name="af",
@@ -82,13 +86,7 @@ def run(
         result = parse_af_file(file)
         
         # Create ordered JSON output with canonical key order
-        ordered_output = {
-            'purpose': result['purpose'],
-            'vision': result['vision'],
-            'must': result['must'],
-            'dont': result['dont'],
-            'nice': result['nice']
-        }
+        ordered_output = {key: result[key] for key in CANONICAL_KEY_ORDER}
         
         # Output JSON to stdout
         json_output = json.dumps(ordered_output, indent=2, ensure_ascii=False)
