@@ -54,6 +54,8 @@ def _levenshtein_distance(s1: str, s2: str) -> int:
     """
     Calculate the Levenshtein distance between two strings.
     
+    Uses an iterative dynamic programming approach to avoid stack overflow.
+    
     Args:
         s1: First string
         s2: Second string
@@ -61,13 +63,16 @@ def _levenshtein_distance(s1: str, s2: str) -> int:
     Returns:
         Edit distance between s1 and s2
     """
+    # Swap strings if s2 is longer to optimize space complexity
     if len(s1) < len(s2):
-        return _levenshtein_distance(s2, s1)
+        s1, s2 = s2, s1
     
     if len(s2) == 0:
         return len(s1)
     
-    previous_row = range(len(s2) + 1)
+    # Use only two rows for space efficiency (previous and current)
+    previous_row = list(range(len(s2) + 1))
+    
     for i, c1 in enumerate(s1):
         current_row = [i + 1]
         for j, c2 in enumerate(s2):

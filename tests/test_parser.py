@@ -653,7 +653,7 @@ nice: ["Test"]
     # Should parse successfully
     result = validate_af_content(content)
     # Newline should be preserved in the output
-    assert "This is a\nmultiline string" == result['purpose']
+    assert result['purpose'] == "This is a\nmultiline string"
 
 
 def test_list_with_mixed_quotes():
@@ -1110,7 +1110,7 @@ nice: ["Test"]
     
     # Should parse successfully with newlines preserved
     result = validate_af_content(content)
-    assert "This is a\nmultiline string" == result['purpose']
+    assert result['purpose'] == "This is a\nmultiline string"
 
 
 def test_canonical_key_order_preserved():
@@ -1425,7 +1425,7 @@ dont: ["Test"]
 nice: ["Test"]
 """
     result = validate_af_content(content)
-    assert "Build a comprehensive\ntask management system\nthat is easy to use" == result['purpose']
+    assert result['purpose'] == "Build a comprehensive\ntask management system\nthat is easy to use"
 
 
 def test_multiline_vision():
@@ -1439,7 +1439,7 @@ dont: ["Test"]
 nice: ["Test"]
 """
     result = validate_af_content(content)
-    assert "Create an intuitive\nand powerful tool" == result['vision']
+    assert result['vision'] == "Create an intuitive\nand powerful tool"
 
 
 def test_mixed_multiline_strings_and_lists():
@@ -1457,8 +1457,8 @@ dont: ["Skip tests"]
 nice: ["Dark mode"]
 """
     result = validate_af_content(content)
-    assert "Build a comprehensive\ntask management system" == result['purpose']
-    assert "Create an intuitive\nand powerful tool" == result['vision']
+    assert result['purpose'] == "Build a comprehensive\ntask management system"
+    assert result['vision'] == "Create an intuitive\nand powerful tool"
     assert result['must'] == ["Authentication", "Data persistence"]
 
 
