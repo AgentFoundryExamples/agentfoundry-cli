@@ -1588,3 +1588,39 @@ nice: ["Test"]
     error_msg = str(exc_info.value).lower()
     # Should require comma or closing bracket
     assert "comma" in error_msg or "bracket" in error_msg
+
+
+def test_unterminated_string_has_caret():
+    """Test that unterminated string errors include caret indicator (P1 fix)."""
+    content = """
+purpose: "This is unterminated
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFSyntaxError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    assert "unterminated" in error_msg.lower()
+
+
+def test_empty_string_tokenizer_error_has_caret():
+    """Test that empty string errors from tokenizer include caret indicator (P1 fix)."""
+    content = """
+purpose: ""
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFEmptyValueError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    assert "empty" in error_msg.lower()

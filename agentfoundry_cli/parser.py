@@ -311,6 +311,12 @@ class Tokenizer:
         self.column = 1
         # Store lines for error reporting with caret indicators
         self.lines = content.splitlines(keepends=False)
+    
+    def _get_source_line(self, line_num: int) -> Optional[str]:
+        """Get the source line for error reporting (1-indexed)."""
+        if self.lines and 0 < line_num <= len(self.lines):
+            return self.lines[line_num - 1]
+        return None
         
     def peek(self, offset: int = 0) -> Optional[str]:
         """Peek at character at current position + offset without consuming."""
@@ -421,7 +427,8 @@ class Tokenizer:
             f"Unexpected character: {char!r}",
             filename=self.filename,
             line=start_line,
-            column=start_col
+            column=start_col,
+            source_line=self._get_source_line(start_line)
         )
     
     def _scan_comment(self, start_line: int, start_col: int) -> Token:
@@ -454,7 +461,8 @@ class Tokenizer:
                     f"Unterminated string (missing closing {quote_char})",
                     filename=self.filename,
                     line=start_line,
-                    column=start_col
+                    column=start_col,
+                    source_line=self._get_source_line(start_line)
                 )
             
             # Allow actual newlines inside strings (multiline support)
@@ -472,7 +480,8 @@ class Tokenizer:
                         "Incomplete escape sequence at end of input",
                         filename=self.filename,
                         line=self.line,
-                        column=self.column
+                        column=self.column,
+                        source_line=self._get_source_line(self.line)
                     )
                 
                 # Handle escape sequences
@@ -505,7 +514,8 @@ class Tokenizer:
                 "String value cannot be empty",
                 filename=self.filename,
                 line=start_line,
-                column=start_col
+                column=start_col,
+                source_line=self._get_source_line(start_line)
             )
         
         return Token(TokenType.STRING, string_value, start_line, start_col)
