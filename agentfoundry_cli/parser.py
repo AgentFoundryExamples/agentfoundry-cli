@@ -313,7 +313,15 @@ class Tokenizer:
         self.lines = content.splitlines(keepends=False)
     
     def _get_source_line(self, line_num: int) -> Optional[str]:
-        """Get the source line for error reporting (1-indexed)."""
+        """
+        Get the source line for error reporting (1-indexed).
+        
+        Args:
+            line_num: Line number (1-indexed)
+            
+        Returns:
+            The source line string, or None if line_num is invalid or no lines available
+        """
         if self.lines and 0 < line_num <= len(self.lines):
             return self.lines[line_num - 1]
         return None
