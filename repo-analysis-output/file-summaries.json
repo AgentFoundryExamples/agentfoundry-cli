@@ -92,25 +92,29 @@
       "role": "implementation",
       "role_justification": "general implementation file (default classification)",
       "metrics": {
-        "size_bytes": 15224,
-        "loc": 350,
+        "size_bytes": 30988,
+        "loc": 634,
         "todo_count": 0,
-        "declaration_count": 12
+        "declaration_count": 16
       },
       "structure": {
         "declarations": [
+          "class TokenType",
+          "class Token",
           "class AFParseError",
           "class AFMissingKeyError",
           "class AFDuplicateKeyError",
           "class AFUnknownKeyError",
           "class AFSyntaxError",
           "class AFEmptyValueError",
+          "class AFSizeError",
           "function _strip_utf8_bom",
-          "function _tokenize_line",
-          "function _parse_quoted_string",
-          "function _parse_list",
+          "function load_input",
+          "class Tokenizer",
+          "class Parser",
           "function parse_af_file",
-          "function validate_af_content"
+          "function validate_af_content",
+          "function parse_af_stdin"
         ]
       },
       "dependencies": {
@@ -118,11 +122,17 @@
         "exports": [],
         "external": {
           "stdlib": [
+            "dataclasses.dataclass",
+            "enum.Enum",
+            "enum.auto",
+            "io",
             "pathlib.Path",
-            "re",
+            "sys",
             "typing.Any",
             "typing.Dict",
             "typing.List",
+            "typing.Optional",
+            "typing.TextIO",
             "typing.Tuple"
           ],
           "third-party": []
@@ -250,10 +260,10 @@
       "role": "test",
       "role_justification": "filename starts with 'test_'",
       "metrics": {
-        "size_bytes": 21998,
-        "loc": 576,
+        "size_bytes": 37929,
+        "loc": 905,
         "todo_count": 0,
-        "declaration_count": 46
+        "declaration_count": 67
       },
       "structure": {
         "declarations": [
@@ -302,7 +312,28 @@
           "function test_keys_returned_lowercase",
           "function test_string_with_newline_escape",
           "function test_string_with_tab_escape",
-          "function test_comprehensive_valid_file"
+          "function test_comprehensive_valid_file",
+          "function test_utf8_with_emojis",
+          "function test_utf8_with_combining_characters",
+          "function test_utf8_bom_at_file_start",
+          "function test_size_limit_exactly_1mb_minus_1",
+          "function test_size_limit_exactly_1mb_accepted",
+          "function test_size_limit_over_1mb_rejected",
+          "function test_size_limit_exceeds_1mb_rejected",
+          "function test_empty_file_rejected",
+          "function test_file_with_only_comments_rejected",
+          "function test_file_with_only_whitespace_rejected",
+          "function test_stdin_support",
+          "function test_stdin_size_limit",
+          "function test_file_size_check_before_parse",
+          "function test_load_input_requires_exactly_one_source",
+          "function test_tokenizer_preserves_positions",
+          "function test_error_messages_include_position",
+          "function test_multiline_strings_not_supported",
+          "function test_canonical_key_order_preserved",
+          "function test_parse_af_file_canonical_order",
+          "function test_validate_af_content_bom_size_consistency",
+          "function test_stdin_size_check_before_newline_normalization"
         ]
       },
       "dependencies": {
@@ -310,8 +341,10 @@
         "exports": [],
         "external": {
           "stdlib": [
+            "io",
             "os",
             "pathlib.Path",
+            "sys",
             "tempfile"
           ],
           "third-party": [

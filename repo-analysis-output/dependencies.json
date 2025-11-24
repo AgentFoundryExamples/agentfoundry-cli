@@ -40,11 +40,17 @@
       "type": "file",
       "external_dependencies": {
         "stdlib": [
+          "dataclasses.dataclass",
+          "enum.Enum",
+          "enum.auto",
+          "io",
           "pathlib.Path",
-          "re",
+          "sys",
           "typing.Any",
           "typing.Dict",
           "typing.List",
+          "typing.Optional",
+          "typing.TextIO",
           "typing.Tuple"
         ],
         "third-party": []
@@ -94,8 +100,10 @@
       "type": "file",
       "external_dependencies": {
         "stdlib": [
+          "io",
           "os",
           "pathlib.Path",
+          "sys",
           "tempfile"
         ],
         "third-party": [
@@ -136,6 +144,10 @@
   ],
   "external_dependencies_summary": {
     "stdlib": [
+      "dataclasses.dataclass",
+      "enum.Enum",
+      "enum.auto",
+      "io",
       "json",
       "os",
       "pathlib.Path",
@@ -146,6 +158,7 @@
       "typing.Dict",
       "typing.List",
       "typing.Optional",
+      "typing.TextIO",
       "typing.Tuple"
     ],
     "third-party": [
@@ -153,7 +166,7 @@
       "typer",
       "typer.testing.CliRunner"
     ],
-    "stdlib_count": 11,
+    "stdlib_count": 16,
     "third-party_count": 3
   }
 }

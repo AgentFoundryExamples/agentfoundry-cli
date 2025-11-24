@@ -8,15 +8,19 @@ Includes classification of external dependencies as stdlib vs third-party.
 
 - **Total files**: 8
 - **Intra-repo dependencies**: 7
-- **External stdlib dependencies**: 11
+- **External stdlib dependencies**: 16
 - **External third-party dependencies**: 3
 
 ## External Dependencies
 
 ### Standard Library / Core Modules
 
-Total: 11 unique modules
+Total: 16 unique modules
 
+- `dataclasses.dataclass`
+- `enum.Enum`
+- `enum.auto`
+- `io`
 - `json`
 - `os`
 - `pathlib.Path`
@@ -27,6 +31,7 @@ Total: 11 unique modules
 - `typing.Dict`
 - `typing.List`
 - `typing.Optional`
+- `typing.TextIO`
 - `typing.Tuple`
 
 ### Third-Party Packages

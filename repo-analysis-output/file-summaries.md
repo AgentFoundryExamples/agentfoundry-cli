@@ -44,25 +44,25 @@ Total files: 8
 **Language:** Python  
 **Role:** implementation  
 **Role Justification:** general implementation file (default classification)  
-**Size:** 14.87 KB  
-**LOC:** 350  
+**Size:** 30.26 KB  
+**LOC:** 634  
 **TODOs/FIXMEs:** 0  
-**Declarations:** 12  
+**Declarations:** 16  
 **Top-level declarations:**
+  - class TokenType
+  - class Token
   - class AFParseError
   - class AFMissingKeyError
   - class AFDuplicateKeyError
   - class AFUnknownKeyError
   - class AFSyntaxError
   - class AFEmptyValueError
+  - class AFSizeError
   - function _strip_utf8_bom
-  - function _tokenize_line
-  - function _parse_quoted_string
-  - function _parse_list
-  - ... and 2 more
+  - ... and 6 more
 **External Dependencies:**
-  - **Stdlib:** `pathlib.Path`, `re`, `typing.Any`, `typing.Dict`, `typing.List`
-    _(and 1 more)_
+  - **Stdlib:** `dataclasses.dataclass`, `enum.Enum`, `enum.auto`, `io`, `pathlib.Path`
+    _(and 7 more)_
 
 ## tests/__init__.py
 **Language:** Python  
@@ -123,10 +123,10 @@ Total files: 8
 **Language:** Python  
 **Role:** test  
 **Role Justification:** filename starts with 'test_'  
-**Size:** 21.48 KB  
-**LOC:** 576  
+**Size:** 37.04 KB  
+**LOC:** 905  
 **TODOs/FIXMEs:** 0  
-**Declarations:** 46  
+**Declarations:** 67  
 **Top-level declarations:**
   - function test_parse_valid_file
   - function test_parse_valid_file_with_single_quotes
@@ -138,7 +138,7 @@ Total files: 8
   - function test_missing_purpose_key
   - function test_missing_vision_key
   - function test_missing_must_key
-  - ... and 36 more
+  - ... and 57 more
 **External Dependencies:**
-  - **Stdlib:** `os`, `pathlib.Path`, `tempfile`
+  - **Stdlib:** `io`, `os`, `pathlib.Path`, `sys`, `tempfile`
   - **Third-party:** `pytest`
