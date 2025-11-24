@@ -553,11 +553,13 @@ def test_parse_file_requires_af_extension():
         temp_path = f.name
     
     try:
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(AFParseError) as exc_info:
             parse_af_file(temp_path)
         
         assert ".af extension" in str(exc_info.value).lower()
         assert ".txt" in str(exc_info.value)
+        # Verify filename is included in the error
+        assert temp_path in str(exc_info.value) or exc_info.value.filename == temp_path
     finally:
         os.unlink(temp_path)
 
@@ -570,10 +572,12 @@ def test_parse_file_requires_extension():
         temp_path = f.name
     
     try:
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(AFParseError) as exc_info:
             parse_af_file(temp_path)
         
         assert ".af extension" in str(exc_info.value).lower()
+        # Verify filename is included in the error
+        assert temp_path in str(exc_info.value) or exc_info.value.filename == temp_path
     finally:
         os.unlink(temp_path)
 

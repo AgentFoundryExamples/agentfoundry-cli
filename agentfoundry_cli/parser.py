@@ -372,14 +372,13 @@ def parse_af_file(filepath: str) -> Dict[str, Any]:
         - 'nice': List[str]
         
     Raises:
-        AFParseError: Base exception for any parsing errors
+        AFParseError: Base exception for any parsing errors (including wrong extension)
         AFMissingKeyError: When required keys are missing
         AFDuplicateKeyError: When keys appear multiple times
         AFUnknownKeyError: When unknown keys are encountered
         AFSyntaxError: For syntax errors
         AFEmptyValueError: When required values are empty
         FileNotFoundError: If file doesn't exist
-        ValueError: If file doesn't have .af extension
     """
     # Validate file exists
     path = Path(filepath)
@@ -388,8 +387,9 @@ def parse_af_file(filepath: str) -> Dict[str, Any]:
     
     # Validate .af suffix (case-insensitive)
     if path.suffix.lower() != '.af':
-        raise ValueError(
-            f"File must have .af extension, got: {path.suffix or '(no extension)'}"
+        raise AFParseError(
+            f"File must have .af extension, got: {path.suffix or '(no extension)'}",
+            filename=filepath
         )
     
     # Read file content
