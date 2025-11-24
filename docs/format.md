@@ -106,25 +106,13 @@ purpose: "Build a comprehensive task management system"
 vision: "Create an intuitive and powerful tool for tracking team tasks"
 
 # Required features
-must: [
-    "User authentication",
-    "Task creation and editing",
-    "Data persistence"
-]
+must: ["User authentication", "Task creation and editing", "Data persistence"]
 
 # Things to avoid
-dont: [
-    "Skip input validation",
-    "Ignore security best practices",
-    "Forget error handling"
-]
+dont: ["Skip input validation", "Ignore security best practices", "Forget error handling"]
 
 # Nice to have features
-nice: [
-    "Dark mode support",
-    "Mobile responsive design",
-    "Real-time updates"
-]
+nice: ["Dark mode support", "Mobile responsive design", "Real-time updates"]
 ```
 
 ## Error Reporting
@@ -203,7 +191,8 @@ Files should be encoded in UTF-8. The parser automatically handles UTF-8 BOM (By
 
 ## Limitations
 
-- **No multiline strings** - Each value must be on a single line
+- **No multiline strings** - Each string value must be on a single line
+- **No multiline lists** - List values must be on a single line with all items between `[` and `]`
 - **No nested structures** - Lists cannot contain sublists or nested objects
 - **Fixed schema** - Only the five required keys are supported
 - **No variable interpolation** - Values are literal strings, no variable substitution
