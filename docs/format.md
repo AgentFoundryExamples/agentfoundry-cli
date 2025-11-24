@@ -32,21 +32,33 @@ Keys are case-insensitive (e.g., `PURPOSE`, `purpose`, and `Purpose` are equival
 
 ### Comments
 
-Lines starting with `#` are treated as comments and ignored:
+Lines starting with `#` are treated as comments and ignored. Comments can also appear after meaningful tokens on the same line (inline comments):
 
 ```
-# This is a comment
-purpose: "Build a task manager"
+# This is a standalone comment
+purpose: "Build a task manager" # This is an inline comment
 ```
 
 ### String Values
 
-String values for `purpose` and `vision` must be enclosed in quotes (single or double):
+String values for `purpose` and `vision` must be enclosed in quotes (single or double). **Strings can now span multiple lines**, with embedded newlines preserved in the JSON output:
 
 ```
 purpose: "Build a comprehensive task management system"
 vision: 'Create an intuitive tool for tracking tasks'
 ```
+
+#### Multiline Strings
+
+You can split long strings across multiple lines. The actual newline characters will be preserved in the output:
+
+```
+purpose: "Build a comprehensive
+task management system
+that is easy to use"
+```
+
+This preserves the newlines in the JSON output.
 
 #### Quotes and Apostrophes
 
@@ -74,10 +86,40 @@ The following escape sequences are supported in strings:
 
 ### List Values
 
-Lists for `must`, `dont`, and `nice` use square bracket notation with comma-separated quoted strings:
+Lists for `must`, `dont`, and `nice` use square bracket notation with comma-separated quoted strings. **Lists can now span multiple lines** for better readability:
 
 ```
 must: ["Complete authentication", "Implement data persistence", "Add error handling"]
+```
+
+#### Multiline Lists
+
+Lists can be formatted across multiple lines. **When items are on separate lines, commas between items are optional**:
+
+```
+# With commas (traditional style)
+must: [
+    "Complete authentication",
+    "Implement data persistence",
+    "Add error handling"
+]
+
+# Without commas (newline-separated style)
+must: [
+    "Complete authentication"
+    "Implement data persistence"
+    "Add error handling"
+]
+```
+
+Both formats are valid and produce the same result. You can even mix styles:
+
+```
+must: [
+    "Authentication",       # With comma
+    "Data persistence"      # Without comma (newline-separated)
+    "Error handling",       # Mixed is fine
+]
 ```
 
 Lists can use single or double quotes for items:
@@ -86,10 +128,36 @@ Lists can use single or double quotes for items:
 dont: ['Skip tests', "Ignore security", 'Forget documentation']
 ```
 
-Trailing commas are allowed:
+Trailing commas are allowed (optional before closing bracket):
 
 ```
-nice: ["Dark mode", "Mobile support",]
+nice: [
+    "Dark mode",
+    "Mobile support",
+]
+```
+
+**Note**: Items on the *same line* must be separated by commas. Commas are only optional when items are on separate lines:
+
+```
+# Valid - items on separate lines, no commas needed
+must: [
+    "Item 1"
+    "Item 2"
+]
+
+# Invalid - items on same line require commas
+must: ["Item 1" "Item 2"]  # This will cause an error!
+```
+
+Comments can appear within multiline lists:
+
+```
+must: [
+    "Authentication",  # User login
+    "Data persistence", # Database
+    "Error handling"   # Proper errors
+]
 ```
 
 ### Whitespace
@@ -109,14 +177,45 @@ must   :["Item 1",  "Item 2"]
 purpose: "Build a comprehensive task management system"
 vision: "Create an intuitive and powerful tool for tracking team tasks"
 
-# Required features
-must: ["User authentication", "Task creation and editing", "Data persistence"]
+# Required features (using newline-separated style - no commas needed)
+must: [
+    "User authentication"        # Login system
+    "Task creation and editing"  # Core functionality
+    "Data persistence"           # Save to database
+]
 
-# Things to avoid
-dont: ["Skip input validation", "Ignore security best practices", "Forget error handling"]
+# Things to avoid (using comma-separated style)
+dont: [
+    "Skip input validation",
+    "Ignore security best practices",
+    "Forget error handling"
+]
 
-# Nice to have features
-nice: ["Dark mode support", "Mobile responsive design", "Real-time updates"]
+# Nice to have features (with trailing comma)
+nice: [
+    "Dark mode support",
+    "Mobile responsive design",
+    "Real-time updates",
+]
+```
+
+### Multiline String Example
+
+```
+purpose: "Build a comprehensive
+task management system
+with team collaboration"
+
+vision: "Create an intuitive tool
+that empowers teams
+to work more efficiently"
+
+must: [
+    "User authentication",
+    "Task management"
+]
+dont: ["Skip tests"]
+nice: ["Dark mode"]
 ```
 
 ## Error Reporting
@@ -125,9 +224,29 @@ The parser provides detailed error messages including:
 
 - **Filename** - The path to the `.af` file
 - **Line number** - The specific line where the error occurred
-- **Error description** - A human-readable explanation of what went wrong
+- **Column number** - The exact column position of the error
+- **Caret indicator** - A visual pointer (^) showing exactly where the error is
+- **Fuzzy matching** - Suggestions for typos in key names (e.g., "Did you mean 'purpose'?")
 
 ### Common Errors
+
+#### Unknown Keys with Suggestions
+
+The parser uses fuzzy matching to suggest corrections for typos:
+
+```
+Error: File 'example.af', line 3, column 1: Unknown key 'pourpose' (did you mean 'purpose'?)
+pourpose: "Build a task manager"
+^
+```
+
+When the typo is too different, no suggestion is provided:
+
+```
+Error: File 'example.af', line 7, column 1: Unknown key 'completely_wrong'
+completely_wrong: "This should fail"
+^
+```
 
 #### Missing Required Keys
 
@@ -148,10 +267,10 @@ Each key can only appear once (case-insensitive).
 #### Unknown Keys
 
 ```
-Error: File 'example.af', line 7: Unknown key 'extra' (valid keys: dont, must, nice, purpose, vision)
+Error: File 'example.af', line 7: Unknown key 'extra' (did you mean 'nice'?)
 ```
 
-Only the five required keys are allowed.
+Only the five required keys are allowed. The parser will suggest similar keys if you make a typo.
 
 #### Syntax Errors
 
@@ -195,8 +314,6 @@ Files should be encoded in UTF-8. The parser automatically handles UTF-8 BOM (By
 
 ## Limitations
 
-- **No multiline strings** - Each string value must be on a single line
-- **No multiline lists** - List values must be on a single line with all items between `[` and `]`
 - **No nested structures** - Lists cannot contain sublists or nested objects
 - **Fixed schema** - Only the five required keys are supported
 - **No variable interpolation** - Values are literal strings, no variable substitution

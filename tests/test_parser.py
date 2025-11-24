@@ -639,18 +639,21 @@ nice: ["Add themes"]
     assert "line 5" in error_msg.lower()
 
 
-def test_multiline_not_supported():
-    """Test that multiline values are not supported (should fail)."""
+def test_multiline_strings_supported():
+    """Test that multiline strings are now supported with newlines preserved."""
     content = """
-purpose: "Build a task manager
-that spans multiple lines"
-vision: "Create something great"
-must: ["Complete auth"]
-dont: ["Skip tests"]
-nice: ["Add themes"]
+purpose: "This is a
+multiline string"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
 """
-    with pytest.raises(AFSyntaxError):
-        validate_af_content(content)
+    
+    # Should parse successfully
+    result = validate_af_content(content)
+    # Newline should be preserved in the output
+    assert result['purpose'] == "This is a\nmultiline string"
 
 
 def test_list_with_mixed_quotes():
@@ -1094,8 +1097,8 @@ nice: ["test"]
     assert "column" in error_msg.lower()
 
 
-def test_multiline_strings_not_supported():
-    """Test that multiline strings are still not supported (newlines in strings break)."""
+def test_multiline_strings_preserve_newlines():
+    """Test that multiline strings preserve newlines in output."""
     content = """
 purpose: "This is a
 multiline string"
@@ -1105,9 +1108,9 @@ dont: ["Test"]
 nice: ["Test"]
 """
     
-    # Should fail because newline inside string
-    with pytest.raises(AFSyntaxError):
-        validate_af_content(content)
+    # Should parse successfully with newlines preserved
+    result = validate_af_content(content)
+    assert result['purpose'] == "This is a\nmultiline string"
 
 
 def test_canonical_key_order_preserved():
@@ -1258,3 +1261,500 @@ def test_stdin_size_check_before_newline_normalization():
         assert "too large" in str(exc_info.value).lower()
     finally:
         sys.stdin = old_stdin
+
+
+def test_multiline_list_with_newlines():
+    """Test that lists can span multiple lines with newlines between items."""
+    content = """
+purpose: "Test"
+vision: "Test"
+must: [
+    "Item 1",
+    "Item 2",
+    "Item 3"
+]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['must'] == ["Item 1", "Item 2", "Item 3"]
+
+
+def test_multiline_list_trailing_comma():
+    """Test that lists accept trailing commas before closing bracket."""
+    content = """
+purpose: "Test"
+vision: "Test"
+must: [
+    "Item 1",
+    "Item 2",
+    "Item 3",
+]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['must'] == ["Item 1", "Item 2", "Item 3"]
+
+
+def test_inline_comment_after_value():
+    """Test that inline comments after values are ignored."""
+    content = """
+purpose: "Build a task manager" # This is a comment
+vision: "Create something great"
+must: ["Complete auth"]
+dont: ["Skip tests"]
+nice: ["Add themes"]
+"""
+    result = validate_af_content(content)
+    assert result['purpose'] == "Build a task manager"
+
+
+def test_inline_comment_after_list():
+    """Test that inline comments after lists are ignored."""
+    content = """
+purpose: "Test"
+vision: "Test"
+must: ["Item 1", "Item 2"] # Comment after list
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['must'] == ["Item 1", "Item 2"]
+
+
+def test_inline_comment_in_list():
+    """Test that comments can appear within multiline lists."""
+    content = """
+purpose: "Test"
+vision: "Test"
+must: [
+    "Item 1",  # First item
+    "Item 2",  # Second item
+    "Item 3"   # Third item
+]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['must'] == ["Item 1", "Item 2", "Item 3"]
+
+
+def test_fuzzy_matching_typo_purpose():
+    """Test that fuzzy matching suggests correct key for typo."""
+    content = """
+pourpose: "Test"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFUnknownKeyError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value).lower()
+    assert "pourpose" in error_msg
+    assert "did you mean" in error_msg
+    assert "purpose" in error_msg
+
+
+def test_fuzzy_matching_typo_vision():
+    """Test fuzzy matching for vision typo."""
+    content = """
+purpose: "Test"
+vission: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFUnknownKeyError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value).lower()
+    assert "vission" in error_msg
+    assert "did you mean" in error_msg
+    assert "vision" in error_msg
+
+
+def test_fuzzy_matching_typo_must():
+    """Test fuzzy matching for must typo."""
+    content = """
+purpose: "Test"
+vision: "Test"
+muts: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFUnknownKeyError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value).lower()
+    assert "muts" in error_msg
+    assert "did you mean" in error_msg
+    assert "must" in error_msg
+
+
+def test_fuzzy_matching_no_suggestion_far_typo():
+    """Test that very different keys don't get suggestions."""
+    content = """
+purpose: "Test"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+completely_wrong: "Test"
+"""
+    with pytest.raises(AFUnknownKeyError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value).lower()
+    assert "completely_wrong" in error_msg
+    # Should not have a suggestion since it's too far
+    assert "did you mean" not in error_msg
+
+
+def test_multiline_purpose_with_vision():
+    """Test multiline purpose string."""
+    content = """
+purpose: "Build a comprehensive
+task management system
+that is easy to use"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['purpose'] == "Build a comprehensive\ntask management system\nthat is easy to use"
+
+
+def test_multiline_vision():
+    """Test multiline vision string."""
+    content = """
+purpose: "Test"
+vision: "Create an intuitive
+and powerful tool"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['vision'] == "Create an intuitive\nand powerful tool"
+
+
+def test_mixed_multiline_strings_and_lists():
+    """Test combination of multiline strings and multiline lists."""
+    content = """
+purpose: "Build a comprehensive
+task management system"
+vision: "Create an intuitive
+and powerful tool"
+must: [
+    "Authentication",
+    "Data persistence"
+]
+dont: ["Skip tests"]
+nice: ["Dark mode"]
+"""
+    result = validate_af_content(content)
+    assert result['purpose'] == "Build a comprehensive\ntask management system"
+    assert result['vision'] == "Create an intuitive\nand powerful tool"
+    assert result['must'] == ["Authentication", "Data persistence"]
+
+
+def test_error_with_caret_indicator():
+    """Test that errors include caret indicators pointing to the problem."""
+    content = """
+purpose: "Test"
+unknwon: "Test"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFUnknownKeyError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include the source line
+    assert "unknwon" in error_msg
+    # Should include caret indicator
+    assert "^" in error_msg
+
+
+def test_newline_separated_items_without_commas():
+    """Test that list items can be separated by newlines without commas (P1 fix)."""
+    content = """
+purpose: "Test"
+vision: "Test"
+must: [
+    "Item 1"
+    "Item 2"
+    "Item 3"
+]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['must'] == ["Item 1", "Item 2", "Item 3"]
+
+
+def test_newline_separated_with_mixed_commas():
+    """Test that list items can mix newlines and commas."""
+    content = """
+purpose: "Test"
+vision: "Test"
+must: [
+    "Item 1",
+    "Item 2"
+    "Item 3"
+]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['must'] == ["Item 1", "Item 2", "Item 3"]
+
+
+def test_duplicate_key_error_has_caret(capsys):
+    """Test that duplicate key errors include caret indicator (P2 fix)."""
+    content = """
+purpose: "Test"
+purpose: "Duplicate"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFDuplicateKeyError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    # Should include the source line
+    assert 'purpose: "Duplicate"' in error_msg
+
+
+def test_empty_key_error_has_caret():
+    """Test that empty key errors include caret indicator (P2 fix)."""
+    content = """
+: "Test"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFSyntaxError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    # Should include the source line
+    assert ': "Test"' in error_msg
+
+
+def test_unquoted_string_error_has_caret():
+    """Test that unquoted string errors include caret indicator (P2 fix)."""
+    content = """
+purpose: Build a task manager
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFSyntaxError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    assert "quoted" in error_msg.lower()
+
+
+def test_same_line_items_without_comma_rejected():
+    """Test that items on the same line without comma are rejected (P2 fix)."""
+    content = """
+purpose: "Test"
+vision: "Test"
+must: ["Item 1" "Item 2"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFSyntaxError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value).lower()
+    # Should require comma or closing bracket
+    assert "comma" in error_msg or "bracket" in error_msg
+
+
+def test_unterminated_string_has_caret():
+    """Test that unterminated string errors include caret indicator (P1 fix)."""
+    content = """
+purpose: "This is unterminated
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFSyntaxError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    assert "unterminated" in error_msg.lower()
+
+
+def test_empty_string_tokenizer_error_has_caret():
+    """Test that empty string errors from tokenizer include caret indicator (P1 fix)."""
+    content = """
+purpose: ""
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFEmptyValueError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    assert "empty" in error_msg.lower()
+
+
+def test_missing_colon_has_caret():
+    """Test that missing colon errors include caret indicator (P1 fix)."""
+    content = """
+purpose "Test"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFSyntaxError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    assert "colon" in error_msg.lower() or "expected" in error_msg.lower()
+
+
+def test_comment_before_string_value():
+    """Test that comments before string values are ignored (P1 fix)."""
+    content = """
+purpose: # This is a comment
+"Build a task manager"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['purpose'] == "Build a task manager"
+
+
+def test_comment_before_list_value():
+    """Test that comments before list values are ignored (P1 fix)."""
+    content = """
+purpose: "Test"
+vision: "Test"
+must: # Comment before list
+["Item 1", "Item 2"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['must'] == ["Item 1", "Item 2"]
+
+
+def test_newline_before_value():
+    """Test that newlines before values are ignored."""
+    content = """
+purpose:
+"Build a task manager"
+vision: "Test"
+must:
+["Item 1"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['purpose'] == "Build a task manager"
+    assert result['must'] == ["Item 1"]
+
+
+def test_multiple_comments_before_value():
+    """Test that multiple comments/newlines before values are ignored."""
+    content = """
+purpose: # Comment 1
+# Comment 2
+"Build a task manager"
+vision: "Test"
+must: # Comment
+# Another comment
+["Item 1", "Item 2"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    result = validate_af_content(content)
+    assert result['purpose'] == "Build a task manager"
+    assert result['must'] == ["Item 1", "Item 2"]
+
+
+def test_missing_key_has_caret():
+    """Test that missing key errors include caret indicator (P1 fix)."""
+    content = """
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFMissingKeyError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    assert "missing" in error_msg.lower()
+    assert "purpose" in error_msg.lower()
+
+
+def test_missing_multiple_keys_has_caret():
+    """Test that missing multiple keys error includes caret indicator."""
+    content = """
+vision: "Test"
+"""
+    with pytest.raises(AFMissingKeyError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    assert "missing" in error_msg.lower()
+
+
+def test_empty_input_has_caret():
+    """Test that empty input errors include caret indicator (P1 fix)."""
+    with pytest.raises(AFMissingKeyError) as exc_info:
+        validate_af_content('')
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator even for empty input
+    assert "^" in error_msg
+    assert "missing" in error_msg.lower()
+
+
+def test_whitespace_only_input_has_caret():
+    """Test that whitespace-only input errors include caret indicator (P1 fix)."""
+    with pytest.raises(AFMissingKeyError) as exc_info:
+        validate_af_content('   \n\n   ')
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator even for whitespace-only input
+    assert "^" in error_msg
+    assert "missing" in error_msg.lower()
