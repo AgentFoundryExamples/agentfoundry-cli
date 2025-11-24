@@ -525,8 +525,9 @@ def test_run_command_stdout_stderr_separation():
         result_error = runner.invoke(app, ["run", "/nonexistent.af"])
         assert result_error.exit_code == 1
         
-        # Assert stderr contains the error message
-        assert result_error.stderr, "stderr should not be empty for error case"
+        # Assert stderr contains the error message (handle None case)
+        assert result_error.stderr is not None and result_error.stderr.strip() != "", \
+            "stderr should not be empty for error case"
         assert "error" in result_error.stderr.lower() or "not found" in result_error.stderr.lower(), \
             "stderr should contain error message"
         
