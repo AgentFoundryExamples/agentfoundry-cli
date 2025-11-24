@@ -629,7 +629,9 @@ class Parser:
             raise AFMissingKeyError(
                 f"Missing required keys: {', '.join(sorted(missing_keys))}",
                 filename=self.filename,
-                line=last_token.line
+                line=last_token.line,
+                column=last_token.column,
+                source_line=self._get_source_line(last_token.line)
             )
         
         # Return result in canonical order

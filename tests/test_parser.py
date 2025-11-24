@@ -1704,3 +1704,35 @@ nice: ["Test"]
     result = validate_af_content(content)
     assert result['purpose'] == "Build a task manager"
     assert result['must'] == ["Item 1", "Item 2"]
+
+
+def test_missing_key_has_caret():
+    """Test that missing key errors include caret indicator (P1 fix)."""
+    content = """
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    with pytest.raises(AFMissingKeyError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    assert "missing" in error_msg.lower()
+    assert "purpose" in error_msg.lower()
+
+
+def test_missing_multiple_keys_has_caret():
+    """Test that missing multiple keys error includes caret indicator."""
+    content = """
+vision: "Test"
+"""
+    with pytest.raises(AFMissingKeyError) as exc_info:
+        validate_af_content(content)
+    
+    error_msg = str(exc_info.value)
+    # Should include caret indicator
+    assert "^" in error_msg
+    assert "missing" in error_msg.lower()
