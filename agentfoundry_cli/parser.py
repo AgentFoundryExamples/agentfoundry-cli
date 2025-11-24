@@ -179,7 +179,7 @@ def load_input(source: Optional[str] = None, stream: Optional[TextIO] = None) ->
         
         # Check file size before reading
         file_size = path.stat().st_size
-        if file_size >= MAX_INPUT_SIZE:
+        if file_size > MAX_INPUT_SIZE:
             raise AFSizeError(
                 f"Input file too large: {file_size} bytes (maximum: {MAX_INPUT_SIZE} bytes)",
                 filename=source
@@ -208,7 +208,7 @@ def load_input(source: Optional[str] = None, stream: Optional[TextIO] = None) ->
     
     # Verify we didn't exceed size limit after reading
     # (encoding can expand byte size)
-    if len(content.encode('utf-8')) >= MAX_INPUT_SIZE:
+    if len(content.encode('utf-8')) > MAX_INPUT_SIZE:
         raise AFSizeError(
             f"Input too large: exceeds {MAX_INPUT_SIZE} bytes (1MB) limit",
             filename=source
@@ -822,7 +822,7 @@ def validate_af_content(content: str, filename: str = None) -> Dict[str, Any]:
     content = _strip_utf8_bom(content)
     
     # Check size limit
-    if len(content.encode('utf-8')) >= MAX_INPUT_SIZE:
+    if len(content.encode('utf-8')) > MAX_INPUT_SIZE:
         raise AFSizeError(
             f"Input too large: exceeds {MAX_INPUT_SIZE} bytes (1MB) limit",
             filename=filename
@@ -850,8 +850,18 @@ def parse_af_stdin() -> Dict[str, Any]:
         AFParseError and subclasses for validation errors
         AFSizeError: When input exceeds 1MB limit
     """
+    # Ensure stdin is using UTF-8 encoding
+    # Create a UTF-8 text wrapper around stdin's buffer
+    import io
+    if hasattr(sys.stdin, 'buffer'):
+        # If stdin has a buffer (normal case), wrap it with UTF-8 encoding
+        utf8_stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='strict')
+    else:
+        # Fallback for cases where stdin doesn't have a buffer (e.g., StringIO in tests)
+        utf8_stdin = sys.stdin
+    
     # Load from stdin with size and encoding validation
-    content = load_input(stream=sys.stdin)
+    content = load_input(stream=utf8_stdin)
     
     # Tokenize
     tokenizer = Tokenizer(content, filename="<stdin>")

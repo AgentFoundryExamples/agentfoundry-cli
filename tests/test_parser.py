@@ -844,11 +844,52 @@ nice: ["Test"]
     assert result['purpose'] == "Test"
 
 
-def test_size_limit_at_1mb_rejected():
-    """Test that input exactly at 1MB is rejected."""
+def test_size_limit_exactly_1mb_accepted():
+    """Test that input exactly at 1MB (1,048,576 bytes) is accepted."""
+    from agentfoundry_cli.parser import MAX_INPUT_SIZE
+    
+    # Create content that's exactly 1MB
+    base_content = """purpose: "Test"
+vision: "Test"
+must: ["Test"]
+dont: ["Test"]
+nice: ["Test"]
+"""
+    # Calculate padding needed to reach exactly 1MB
+    base_size = len(base_content.encode('utf-8'))
+    remaining = MAX_INPUT_SIZE - base_size
+    
+    # Add padding comments to fill to exactly 1MB
+    # Each comment line is "# x\n" = 4 bytes
+    num_comment_lines = remaining // 4
+    padding = ("# x\n" * num_comment_lines)
+    
+    # Add any remaining bytes as a shorter comment
+    remaining_bytes = remaining % 4
+    if remaining_bytes > 0:
+        if remaining_bytes == 1:
+            padding += "#"
+        elif remaining_bytes == 2:
+            padding += "# "
+        elif remaining_bytes == 3:
+            padding += "# x"
+    
+    content = padding + base_content
+    
+    # Verify size is exactly at limit
+    actual_size = len(content.encode('utf-8'))
+    assert actual_size == MAX_INPUT_SIZE, f"Expected {MAX_INPUT_SIZE}, got {actual_size}"
+    
+    # Should parse successfully
+    result = validate_af_content(content)
+    assert result['purpose'] == "Test"
+
+
+def test_size_limit_over_1mb_rejected():
+    """Test that input over 1MB (1,048,577+ bytes) is rejected."""
     from agentfoundry_cli.parser import MAX_INPUT_SIZE, AFSizeError
     
-    # Create content that's exactly at or above 1MB
+    # Create content that's over 1MB by 1 byte
     base_content = """
 purpose: "Test"
 vision: "Test"
@@ -856,14 +897,14 @@ must: ["Test"]
 dont: ["Test"]
 nice: ["Test"]
 """
-    # Create padding to reach 1MB
+    # Create padding to exceed 1MB
     padding_size = MAX_INPUT_SIZE - len(base_content.encode('utf-8')) + TEST_SIZE_SMALL_EXCESS
     padding = "# " + "x" * padding_size + "\n"
     
     content = padding + base_content
     
-    # Verify size is at or above limit
-    assert len(content.encode('utf-8')) >= MAX_INPUT_SIZE
+    # Verify size is over limit
+    assert len(content.encode('utf-8')) > MAX_INPUT_SIZE
     
     # Should be rejected
     with pytest.raises(AFSizeError) as exc_info:
