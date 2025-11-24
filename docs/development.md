@@ -318,11 +318,11 @@ Use the template provided in `CHANGELOG.md` for documenting future releases. Eac
 ## Future Development
 
 Areas for future enhancement:
-- **Additional Commands**: Extend CLI with more agent management commands
-- **Configuration**: Support for config files and environment variables
-- **Plugins**: Extensible plugin system for custom commands
+- **Agent Execution**: Currently `af run` parses and validates files; future versions could execute agent workflows via integration with execution platforms
+- **Additional Management Commands**: Extend CLI with commands for agent lifecycle management, monitoring, and orchestration
+- **Configuration**: Support for global/local config files and environment variables
+- **Plugins**: Extensible plugin system for custom commands and parsers
 - **Shell Completion**: Pre-configured completions for bash, zsh, fish
-- **Agent Execution**: Integration with agent execution platforms
 
 ## Troubleshooting
 
