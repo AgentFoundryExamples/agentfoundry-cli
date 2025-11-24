@@ -50,6 +50,64 @@ from pathlib import Path
 from dataclasses import dataclass
 
 
+def _levenshtein_distance(s1: str, s2: str) -> int:
+    """
+    Calculate the Levenshtein distance between two strings.
+    
+    Args:
+        s1: First string
+        s2: Second string
+        
+    Returns:
+        Edit distance between s1 and s2
+    """
+    if len(s1) < len(s2):
+        return _levenshtein_distance(s2, s1)
+    
+    if len(s2) == 0:
+        return len(s1)
+    
+    previous_row = range(len(s2) + 1)
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            # Cost of insertions, deletions, or substitutions
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+    
+    return previous_row[-1]
+
+
+def _find_closest_key(unknown_key: str, valid_keys: set) -> Optional[str]:
+    """
+    Find the closest matching valid key using Levenshtein distance.
+    
+    Args:
+        unknown_key: The unknown key entered by the user
+        valid_keys: Set of valid keys
+        
+    Returns:
+        The closest matching key if distance <= 2, otherwise None
+    """
+    min_distance = float('inf')
+    closest_key = None
+    
+    for valid_key in valid_keys:
+        distance = _levenshtein_distance(unknown_key.lower(), valid_key.lower())
+        if distance < min_distance:
+            min_distance = distance
+            closest_key = valid_key
+    
+    # Only suggest if distance is <= 2 (reasonable typo distance)
+    if min_distance <= 2:
+        return closest_key
+    
+    return None
+
+
 # Maximum input size: 1MB
 MAX_INPUT_SIZE = 1024 * 1024  # 1,048,576 bytes
 
@@ -83,11 +141,13 @@ class Token:
 class AFParseError(Exception):
     """Base exception for .af file parsing errors."""
     
-    def __init__(self, message: str, filename: str = None, line: int = None, column: int = None):
+    def __init__(self, message: str, filename: str = None, line: int = None, column: int = None, 
+                 source_line: str = None):
         self.message = message
         self.filename = filename
         self.line = line
         self.column = column
+        self.source_line = source_line
         
         # Build full error message with location info
         parts = []
@@ -103,6 +163,12 @@ class AFParseError(Exception):
             full_message = f"{', '.join(parts)}: {message}"
         else:
             full_message = message
+        
+        # Add caret indicator if we have line and column info
+        if source_line and line is not None and column is not None:
+            full_message += f"\n{source_line}"
+            # Add caret pointing to the error column
+            full_message += f"\n{' ' * (column - 1)}^"
             
         super().__init__(full_message)
 
@@ -234,6 +300,8 @@ class Tokenizer:
         self.pos = 0
         self.line = 1
         self.column = 1
+        # Store lines for error reporting with caret indicators
+        self.lines = content.splitlines(keepends=False)
         
     def peek(self, offset: int = 0) -> Optional[str]:
         """Peek at character at current position + offset without consuming."""
@@ -363,6 +431,7 @@ class Tokenizer:
         
         Supports:
         - Single and double quotes
+        - Multiline strings (preserving embedded newlines)
         - Escape sequences: \\", \\', \\\\, \\n, \\t
         """
         quote_char = self.advance()  # Consume opening quote
@@ -379,13 +448,11 @@ class Tokenizer:
                     column=start_col
                 )
             
+            # Allow actual newlines inside strings (multiline support)
             if char == '\n' or char == '\r':
-                raise AFSyntaxError(
-                    f"Unterminated string (missing closing {quote_char})",
-                    filename=self.filename,
-                    line=start_line,
-                    column=start_col
-                )
+                # Preserve the newline character in the string value
+                value.append(self.advance())
+                continue
             
             if char == '\\':
                 self.advance()
@@ -452,12 +519,19 @@ class Parser:
     schema with deterministic ordering.
     """
     
-    def __init__(self, tokens: List[Token], filename: str = None):
+    def __init__(self, tokens: List[Token], filename: str = None, source_lines: List[str] = None):
         self.tokens = tokens
         self.filename = filename
+        self.source_lines = source_lines or []
         self.pos = 0
         self.result = {}
         self.seen_keys = {}  # Track where each key was first seen
+    
+    def _get_source_line(self, line_num: int) -> Optional[str]:
+        """Get the source line for error reporting (1-indexed)."""
+        if self.source_lines and 0 < line_num <= len(self.source_lines):
+            return self.source_lines[line_num - 1]
+        return None
     
     def peek(self, offset: int = 0) -> Optional[Token]:
         """Peek at token at current position + offset."""
@@ -552,11 +626,17 @@ class Parser:
         
         # Check for unknown keys
         if key not in REQUIRED_KEYS:
+            # Find closest match
+            suggestion = _find_closest_key(key, REQUIRED_KEYS)
+            error_msg = f"Unknown key '{key}'"
+            if suggestion:
+                error_msg += f" (did you mean '{suggestion}'?)"
             raise AFUnknownKeyError(
-                f"Unknown key '{key}' (valid keys: {', '.join(sorted(REQUIRED_KEYS))})",
+                error_msg,
                 filename=self.filename,
                 line=key_token.line,
-                column=key_token.column
+                column=key_token.column,
+                source_line=self._get_source_line(key_token.line)
             )
         
         # Check for duplicate keys
@@ -799,7 +879,7 @@ def parse_af_file(filepath: str) -> Dict[str, Any]:
     tokens = tokenizer.tokenize()
     
     # Parse
-    parser = Parser(tokens, filename=filepath)
+    parser = Parser(tokens, filename=filepath, source_lines=tokenizer.lines)
     result = parser.parse()
     
     return result
@@ -836,7 +916,7 @@ def validate_af_content(content: str, filename: str = None) -> Dict[str, Any]:
     tokens = tokenizer.tokenize()
     
     # Parse
-    parser = Parser(tokens, filename=filename)
+    parser = Parser(tokens, filename=filename, source_lines=tokenizer.lines)
     result = parser.parse()
     
     return result
@@ -888,7 +968,7 @@ def parse_af_stdin() -> Dict[str, Any]:
     tokens = tokenizer.tokenize()
     
     # Parse
-    parser = Parser(tokens, filename="<stdin>")
+    parser = Parser(tokens, filename="<stdin>", source_lines=tokenizer.lines)
     result = parser.parse()
     
     return result
