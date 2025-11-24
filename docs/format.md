@@ -1,6 +1,6 @@
 # Agent Foundry File Format (.af)
 
-**Version: 1.0.0 (MVP Release)**
+**Version: 1.1.0**
 
 This document describes the syntax and structure of Agent Foundry `.af` files used to define agent configurations.
 
@@ -218,6 +218,46 @@ dont: ["Skip tests"]
 nice: ["Dark mode"]
 ```
 
+### Legacy vs. New Format Comparison
+
+Both legacy (v1.0) single-line format and new multiline format are fully supported. Existing `.af` files continue to work unchanged.
+
+**Legacy Single-Line Format (v1.0):**
+```
+purpose: "Build a task management system"
+vision: "Create an intuitive tool for tracking tasks"
+must: ["User auth", "Task CRUD", "Persistence"]
+dont: ["Skip validation", "Ignore security"]
+nice: ["Dark mode", "Mobile support"]
+```
+
+**New Multiline Format (v1.1):**
+```
+# More readable with multiline support
+purpose: "Build a comprehensive
+task management system"
+
+vision: "Create an intuitive tool
+for tracking team tasks"
+
+# Newline-separated items (commas optional)
+must: [
+    "User authentication"     # Inline comment
+    "Task CRUD operations"
+    "Data persistence"
+]
+
+# Traditional comma-separated still works
+dont: [
+    "Skip validation",
+    "Ignore security",
+]
+
+nice: ["Dark mode", "Mobile support"]  # Single line OK too
+```
+
+Both produce equivalent JSON output. Choose the style that best fits your needs.
+
 ## Error Reporting
 
 The parser provides detailed error messages including:
@@ -308,9 +348,45 @@ Error: File 'example.af', line 6: Unexpected characters after closing quote: 'ex
 5. **Add comments** - Use comments to organize sections and explain intent
 6. **Handle apostrophes properly** - Use double quotes for strings containing apostrophes
 
-## UTF-8 Support
+## UTF-8 Encoding Requirement
 
-Files should be encoded in UTF-8. The parser automatically handles UTF-8 BOM (Byte Order Mark) if present.
+Files **must** be encoded in UTF-8. The parser has strict encoding requirements:
+
+**Automatic Handling:**
+- UTF-8 BOM (Byte Order Mark) is automatically detected and stripped
+- All Unicode characters are supported (emojis, accented characters, CJK scripts, etc.)
+
+**Error Behavior:**
+- Files with invalid UTF-8 encoding are rejected with a clear error:
+  ```
+  Error: File 'config.af': File must be UTF-8 encoded: 'utf-8' codec can't decode byte...
+  ```
+
+**Best Practices:**
+- Use a text editor that saves files in UTF-8
+- Avoid Latin-1, Windows-1252, or other legacy encodings
+- Most modern editors default to UTF-8
+
+## Input Size Limits
+
+To prevent resource exhaustion, the parser enforces a strict size limit:
+
+**Maximum Size:** 1 MB (1,048,576 bytes)
+
+**Behavior:**
+- Files **at or below** 1 MB: Parsed successfully
+- Files **larger than** 1 MB: Rejected before parsing with clear error
+
+**Error Message:**
+```
+Error: Input file too large: 1500000 bytes (maximum: 1048576 bytes)
+```
+
+**Notes:**
+- Size is checked before parsing begins
+- Same limit applies to stdin input
+- The limit is adequate for thousands of configuration items
+- If hitting the limit, consider splitting into multiple configuration files
 
 ## Limitations
 
@@ -357,5 +433,6 @@ The parser raises typed exceptions for different error scenarios:
 - `AFUnknownKeyError` - Unknown key encountered
 - `AFSyntaxError` - Syntax error in file structure
 - `AFEmptyValueError` - Required value is empty
+- `AFSizeError` - Input exceeds 1MB size limit
 
-All exceptions include filename and line number information when available.
+All exceptions include filename, line number, and column number information when available.
