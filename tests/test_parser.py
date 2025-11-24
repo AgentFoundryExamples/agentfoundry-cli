@@ -1179,3 +1179,43 @@ vision: "Create something great"
         assert result['nice'] == ["Add themes"]
     finally:
         os.unlink(temp_path)
+
+
+def test_validate_af_content_bom_size_consistency():
+    """Test that size limit includes BOM bytes for consistency with load_input."""
+    from agentfoundry_cli.parser import MAX_INPUT_SIZE, AFSizeError
+    
+    # BOM is 3 bytes in UTF-8
+    bom = '\ufeff'
+    bom_size = len(bom.encode('utf-8'))
+    
+    # Create content that is exactly at limit when BOM is included
+    base_content = 'purpose: "T"\nvision: "T"\nmust: ["T"]\ndont: ["T"]\nnice: ["T"]\n'
+    target_size_without_bom = MAX_INPUT_SIZE - bom_size
+    
+    # Build content to reach exact size
+    padding_needed = target_size_without_bom - len(base_content.encode('utf-8'))
+    content_without_bom = ('# x\n' * (padding_needed // 4)) + base_content
+    
+    # Fine-tune to exact size
+    while len(content_without_bom.encode('utf-8')) < target_size_without_bom:
+        content_without_bom = '#\n' + content_without_bom
+    while len(content_without_bom.encode('utf-8')) > target_size_without_bom:
+        content_without_bom = content_without_bom[1:]
+    
+    # Add BOM - total should be exactly at limit
+    content_with_bom = bom + content_without_bom
+    assert len(content_with_bom.encode('utf-8')) == MAX_INPUT_SIZE
+    
+    # Should parse successfully (at limit)
+    result = validate_af_content(content_with_bom)
+    assert result['purpose'] == 'T'
+    
+    # Add one more byte - should be rejected
+    content_over_limit = content_with_bom + 'x'
+    assert len(content_over_limit.encode('utf-8')) > MAX_INPUT_SIZE
+    
+    with pytest.raises(AFSizeError) as exc_info:
+        validate_af_content(content_over_limit)
+    
+    assert "too large" in str(exc_info.value).lower()

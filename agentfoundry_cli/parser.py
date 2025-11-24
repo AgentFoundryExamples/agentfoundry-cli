@@ -821,15 +821,15 @@ def validate_af_content(content: str, filename: str = None) -> Dict[str, Any]:
     Raises:
         AFParseError and subclasses for validation errors
     """
-    # Strip UTF-8 BOM if present
-    content = _strip_utf8_bom(content)
-    
-    # Check size limit
+    # Check size limit BEFORE stripping BOM to ensure consistency with load_input
     if len(content.encode('utf-8')) > MAX_INPUT_SIZE:
         raise AFSizeError(
             f"Input too large: exceeds {MAX_INPUT_SIZE} bytes (1MB) limit",
             filename=filename
         )
+    
+    # Strip UTF-8 BOM if present
+    content = _strip_utf8_bom(content)
     
     # Tokenize
     tokenizer = Tokenizer(content, filename=filename)
