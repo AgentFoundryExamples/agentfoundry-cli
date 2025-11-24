@@ -174,14 +174,11 @@ class AFParseError(Exception):
             full_message = message
         
         # Add caret indicator if we have line and column info
-        if line is not None and column is not None:
+        if line is not None and column is not None and column >= 1:
             if source_line:
                 full_message += f"\n{source_line}"
-                # Add caret pointing to the error column
-                full_message += f"\n{' ' * (column - 1)}^"
-            else:
-                # For empty/blank input, still show the caret indicator
-                full_message += f"\n{' ' * (column - 1)}^"
+            # Add caret pointing to the error column
+            full_message += f"\n{' ' * (column - 1)}^"
             
         super().__init__(full_message)
 
