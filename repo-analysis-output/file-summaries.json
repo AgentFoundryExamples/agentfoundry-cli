@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "total_files": 7,
+  "total_files": 8,
   "files": [
     {
       "schema_version": "2.0",
@@ -55,15 +55,16 @@
       "role": "cli",
       "role_justification": "CLI-related name 'cli'",
       "metrics": {
-        "size_bytes": 2569,
-        "loc": 55,
+        "size_bytes": 5018,
+        "loc": 114,
         "todo_count": 0,
-        "declaration_count": 4
+        "declaration_count": 5
       },
       "structure": {
         "declarations": [
           "function hello",
           "function run",
+          "function help",
           "function version",
           "function main"
         ]
@@ -73,6 +74,9 @@
         "exports": [],
         "external": {
           "stdlib": [
+            "json",
+            "pathlib.Path",
+            "sys",
             "typing.Optional"
           ],
           "third-party": [
@@ -88,8 +92,8 @@
       "role": "implementation",
       "role_justification": "general implementation file (default classification)",
       "metrics": {
-        "size_bytes": 14949,
-        "loc": 345,
+        "size_bytes": 15224,
+        "loc": 350,
         "todo_count": 0,
         "declaration_count": 12
       },
@@ -155,20 +159,23 @@
       "role": "test",
       "role_justification": "filename starts with 'test_'",
       "metrics": {
-        "size_bytes": 2886,
-        "loc": 46,
+        "size_bytes": 3981,
+        "loc": 64,
         "todo_count": 0,
-        "declaration_count": 7
+        "declaration_count": 10
       },
       "structure": {
         "declarations": [
-          "function test_help_command",
+          "function test_main_help_flag",
           "function test_hello_command_default",
           "function test_hello_command_with_name",
           "function test_version_command",
           "function test_version_format",
           "function test_run_command_stub",
-          "function test_run_command_in_help"
+          "function test_run_command_in_help",
+          "function test_help_command",
+          "function test_help_command_with_subcommand",
+          "function test_help_command_with_unknown_subcommand"
         ]
       },
       "dependencies": {
@@ -177,6 +184,58 @@
         "external": {
           "stdlib": [
             "re"
+          ],
+          "third-party": [
+            "typer.testing.CliRunner"
+          ]
+        }
+      }
+    },
+    {
+      "schema_version": "2.0",
+      "path": "tests/test_cli_run.py",
+      "language": "Python",
+      "role": "test",
+      "role_justification": "filename starts with 'test_'",
+      "metrics": {
+        "size_bytes": 17237,
+        "loc": 328,
+        "todo_count": 0,
+        "declaration_count": 20
+      },
+      "structure": {
+        "declarations": [
+          "function test_run_command_with_valid_file",
+          "function test_run_command_with_example_file",
+          "function test_run_command_json_only_stdout",
+          "function test_run_command_with_missing_file",
+          "function test_run_command_with_directory",
+          "function test_run_command_with_wrong_extension",
+          "function test_run_command_with_missing_required_key",
+          "function test_run_command_with_duplicate_key",
+          "function test_run_command_with_syntax_error",
+          "function test_run_command_with_empty_list",
+          "function test_run_command_with_crlf_line_endings",
+          "function test_run_command_with_trailing_whitespace",
+          "function test_run_command_with_large_list",
+          "function test_run_command_help",
+          "function test_run_command_treats_help_af_as_filename",
+          "function test_run_command_error_includes_filename",
+          "function test_run_command_error_includes_line_number",
+          "function test_run_command_without_arguments",
+          "function test_run_command_json_is_valid",
+          "function test_run_command_stdout_stderr_separation"
+        ]
+      },
+      "dependencies": {
+        "imports": [],
+        "exports": [],
+        "external": {
+          "stdlib": [
+            "json",
+            "os",
+            "pathlib.Path",
+            "tempfile"
           ],
           "third-party": [
             "typer.testing.CliRunner"

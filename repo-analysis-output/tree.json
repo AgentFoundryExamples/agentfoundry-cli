@@ -69,6 +69,20 @@
         {
           "type": "file",
           "name": "format.md"
+        },
+        {
+          "type": "file",
+          "name": "usage.md"
+        }
+      ]
+    },
+    {
+      "type": "directory",
+      "name": "examples",
+      "children": [
+        {
+          "type": "file",
+          "name": "example.af"
         }
       ]
     },
@@ -117,6 +131,10 @@
         {
           "type": "file",
           "name": "test_cli.py"
+        },
+        {
+          "type": "file",
+          "name": "test_cli_run.py"
         },
         {
           "type": "file",

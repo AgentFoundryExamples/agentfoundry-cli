@@ -6,20 +6,22 @@ Includes classification of external dependencies as stdlib vs third-party.
 
 ## Statistics
 
-- **Total files**: 7
-- **Intra-repo dependencies**: 5
-- **External stdlib dependencies**: 9
+- **Total files**: 8
+- **Intra-repo dependencies**: 7
+- **External stdlib dependencies**: 11
 - **External third-party dependencies**: 3
 
 ## External Dependencies
 
 ### Standard Library / Core Modules
 
-Total: 9 unique modules
+Total: 11 unique modules
 
+- `json`
 - `os`
 - `pathlib.Path`
 - `re`
+- `sys`
 - `tempfile`
 - `typing.Any`
 - `typing.Dict`
@@ -37,13 +39,14 @@ Total: 3 unique packages
 
 ## Most Depended Upon Files (Intra-Repo)
 
-- `agentfoundry_cli/cli.py` (2 dependents)
+- `agentfoundry_cli/cli.py` (3 dependents)
 - `agentfoundry_cli/__init__.py` (2 dependents)
-- `agentfoundry_cli/parser.py` (1 dependents)
+- `agentfoundry_cli/parser.py` (2 dependents)
 
 ## Files with Most Dependencies (Intra-Repo)
 
+- `agentfoundry_cli/cli.py` (2 dependencies)
 - `tests/test_cli.py` (2 dependencies)
 - `agentfoundry_cli/__main__.py` (1 dependencies)
-- `agentfoundry_cli/cli.py` (1 dependencies)
+- `tests/test_cli_run.py` (1 dependencies)
 - `tests/test_parser.py` (1 dependencies)

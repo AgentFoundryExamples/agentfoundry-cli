@@ -14,7 +14,10 @@
   └── parser.py
 ├── docs
   ├── development.md
-  └── format.md
+  ├── format.md
+  └── usage.md
+├── examples
+  └── example.af
 ├── repo-analysis-output
   ├── dependencies.json
   ├── dependencies.md
@@ -26,6 +29,7 @@
 ├── tests
   ├── __init__.py
   ├── test_cli.py
+  ├── test_cli_run.py
   └── test_parser.py
 ├── .gitignore
 ├── example.af

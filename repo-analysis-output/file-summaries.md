@@ -4,7 +4,7 @@ Heuristic summaries of source files based on filenames, extensions, and paths.
 
 Schema Version: 2.0
 
-Total files: 7
+Total files: 8
 
 ## agentfoundry_cli/__init__.py
 **Language:** Python  
@@ -26,25 +26,26 @@ Total files: 7
 **Language:** Python  
 **Role:** cli  
 **Role Justification:** CLI-related name 'cli'  
-**Size:** 2.51 KB  
-**LOC:** 55  
+**Size:** 4.90 KB  
+**LOC:** 114  
 **TODOs/FIXMEs:** 0  
-**Declarations:** 4  
+**Declarations:** 5  
 **Top-level declarations:**
   - function hello
   - function run
+  - function help
   - function version
   - function main
 **External Dependencies:**
-  - **Stdlib:** `typing.Optional`
+  - **Stdlib:** `json`, `pathlib.Path`, `sys`, `typing.Optional`
   - **Third-party:** `typer`
 
 ## agentfoundry_cli/parser.py
 **Language:** Python  
 **Role:** implementation  
 **Role Justification:** general implementation file (default classification)  
-**Size:** 14.60 KB  
-**LOC:** 345  
+**Size:** 14.87 KB  
+**LOC:** 350  
 **TODOs/FIXMEs:** 0  
 **Declarations:** 12  
 **Top-level declarations:**
@@ -75,20 +76,47 @@ Total files: 7
 **Language:** Python  
 **Role:** test  
 **Role Justification:** filename starts with 'test_'  
-**Size:** 2.82 KB  
-**LOC:** 46  
+**Size:** 3.89 KB  
+**LOC:** 64  
 **TODOs/FIXMEs:** 0  
-**Declarations:** 7  
+**Declarations:** 10  
 **Top-level declarations:**
-  - function test_help_command
+  - function test_main_help_flag
   - function test_hello_command_default
   - function test_hello_command_with_name
   - function test_version_command
   - function test_version_format
   - function test_run_command_stub
   - function test_run_command_in_help
+  - function test_help_command
+  - function test_help_command_with_subcommand
+  - function test_help_command_with_unknown_subcommand
 **External Dependencies:**
   - **Stdlib:** `re`
+  - **Third-party:** `typer.testing.CliRunner`
+
+## tests/test_cli_run.py
+**Language:** Python  
+**Role:** test  
+**Role Justification:** filename starts with 'test_'  
+**Size:** 16.83 KB  
+**LOC:** 328  
+**TODOs/FIXMEs:** 0  
+**Declarations:** 20  
+**Top-level declarations:**
+  - function test_run_command_with_valid_file
+  - function test_run_command_with_example_file
+  - function test_run_command_json_only_stdout
+  - function test_run_command_with_missing_file
+  - function test_run_command_with_directory
+  - function test_run_command_with_wrong_extension
+  - function test_run_command_with_missing_required_key
+  - function test_run_command_with_duplicate_key
+  - function test_run_command_with_syntax_error
+  - function test_run_command_with_empty_list
+  - ... and 10 more
+**External Dependencies:**
+  - **Stdlib:** `json`, `os`, `pathlib.Path`, `tempfile`
   - **Third-party:** `typer.testing.CliRunner`
 
 ## tests/test_parser.py
