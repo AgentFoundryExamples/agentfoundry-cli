@@ -315,10 +315,15 @@ def _parse_list(s: str, line_num: int, filename: str = None) -> List[str]:
         elif char == ',' and not in_quotes:
             # End of item
             item_str = ''.join(current_item).strip()
-            if item_str:
-                # Parse the quoted string
-                parsed = _parse_quoted_string(item_str, line_num, filename)
-                items.append(parsed)
+            if not item_str:
+                raise AFSyntaxError(
+                    "Empty item in list (consecutive commas or missing value)",
+                    filename=filename,
+                    line=line_num
+                )
+            # Parse the quoted string
+            parsed = _parse_quoted_string(item_str, line_num, filename)
+            items.append(parsed)
             current_item = []
         else:
             current_item.append(char)

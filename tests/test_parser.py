@@ -420,6 +420,52 @@ nice: ["Add themes"]
     assert result['dont'] == ["Skip tests"]
 
 
+def test_empty_list_item_rejected():
+    """Test that empty items in lists are rejected."""
+    # Empty item in middle
+    content = """
+purpose: "Build a task manager"
+vision: "Create something great"
+must: ["Complete auth", , "More stuff"]
+dont: ["Skip tests"]
+nice: ["Add themes"]
+"""
+    with pytest.raises(AFSyntaxError) as exc_info:
+        validate_af_content(content)
+    
+    assert "empty item" in str(exc_info.value).lower()
+
+
+def test_empty_list_item_at_start_rejected():
+    """Test that empty item at start of list is rejected."""
+    content = """
+purpose: "Build a task manager"
+vision: "Create something great"
+must: [, "Complete auth", "More stuff"]
+dont: ["Skip tests"]
+nice: ["Add themes"]
+"""
+    with pytest.raises(AFSyntaxError) as exc_info:
+        validate_af_content(content)
+    
+    assert "empty item" in str(exc_info.value).lower()
+
+
+def test_multiple_consecutive_commas_rejected():
+    """Test that multiple consecutive commas are rejected."""
+    content = """
+purpose: "Build a task manager"
+vision: "Create something great"
+must: ["Complete auth",, , "More stuff"]
+dont: ["Skip tests"]
+nice: ["Add themes"]
+"""
+    with pytest.raises(AFSyntaxError) as exc_info:
+        validate_af_content(content)
+    
+    assert "empty item" in str(exc_info.value).lower()
+
+
 def test_stray_characters_after_string():
     """Test error for stray characters after quoted string."""
     content = """
