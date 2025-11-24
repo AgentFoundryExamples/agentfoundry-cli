@@ -24,7 +24,7 @@ from typer.testing import CliRunner
 from agentfoundry_cli.cli import app
 from agentfoundry_cli import __version__
 
-runner = CliRunner()
+runner = CliRunner(mix_stderr=False)
 
 
 def test_help_command():
@@ -66,11 +66,12 @@ def test_version_format():
 
 
 def test_run_command_stub():
-    """Test that run command stub exists and provides informative message."""
+    """Test that run command exists and requires an argument."""
     result = runner.invoke(app, ["run"])
-    assert result.exit_code == 1  # Should exit with error since not implemented
-    assert "not yet implemented" in result.stdout.lower()
-    assert "coming soon" in result.stdout.lower()
+    assert result.exit_code != 0  # Should exit with error since no file provided
+    # Verify it's asking for the file argument
+    output = result.stdout.lower() + (result.stderr.lower() if result.stderr else "")
+    assert "missing" in output or "required" in output or "file" in output
 
 
 def test_run_command_in_help():
@@ -78,5 +79,6 @@ def test_run_command_in_help():
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
     assert "run" in result.stdout.lower()
-    assert "workflow" in result.stdout.lower()
+    # The new description mentions parsing and validating .af files
+    assert ".af" in result.stdout.lower() or "parse" in result.stdout.lower()
 

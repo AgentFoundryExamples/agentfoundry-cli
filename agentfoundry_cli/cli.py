@@ -23,8 +23,12 @@ This module defines the Typer application and all CLI commands.
 """
 
 import typer
+import sys
+import json
 from typing import Optional
+from pathlib import Path
 from agentfoundry_cli import __version__
+from agentfoundry_cli.parser import parse_af_file, AFParseError
 
 # Create the main Typer app
 app = typer.Typer(
@@ -57,16 +61,48 @@ def hello(
 
 
 @app.command()
-def run():
+def run(
+    file: str = typer.Argument(
+        ...,
+        help="Path to the .af file to parse and validate",
+        metavar="FILE"
+    )
+):
     """
-    Run an agent workflow (coming soon).
-
-    This command will execute agent workflows based on configuration files.
-    Currently under development.
+    Parse and validate an Agent Foundry (.af) file.
+    
+    Reads the specified .af file, validates its syntax and structure,
+    and outputs the parsed configuration as canonical JSON to stdout.
+    
+    Example:
+        af run examples/example.af
     """
-    typer.echo("⚠️  The 'run' command is not yet implemented.")
-    typer.echo("This feature is coming soon and will execute agent workflows.")
-    raise typer.Exit(1)
+    try:
+        # Parse the file
+        result = parse_af_file(file)
+        
+        # Create ordered JSON output with canonical key order
+        ordered_output = {
+            'purpose': result['purpose'],
+            'vision': result['vision'],
+            'must': result['must'],
+            'dont': result['dont'],
+            'nice': result['nice']
+        }
+        
+        # Output JSON to stdout
+        json_output = json.dumps(ordered_output, indent=2, ensure_ascii=False)
+        typer.echo(json_output)
+        
+    except FileNotFoundError:
+        typer.secho(f"Error: File not found: {file}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+    except AFParseError as e:
+        typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+    except Exception as e:
+        typer.secho(f"Unexpected error: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
 
 
 @app.command()

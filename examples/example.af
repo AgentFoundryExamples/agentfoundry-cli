@@ -1,0 +1,16 @@
+# Example Agent Foundry Configuration
+#
+# This is a sample .af file demonstrating the format.
+# For full syntax specification, see docs/format.md
+
+purpose: "Build a comprehensive task management system"
+vision: "Create an intuitive and powerful tool for tracking team tasks and projects"
+
+# Required features that must be implemented
+must: ["User authentication and authorization", "Task creation, editing, and deletion", "Data persistence with database", "Input validation and error handling"]
+
+# Behaviors and practices to avoid
+dont: ["Skip security best practices", "Ignore input validation", "Forget error handling", "Deploy without testing"]
+
+# Nice-to-have features for future enhancement
+nice: ["Dark mode support", "Mobile responsive design", "Real-time collaboration", "Email notifications", "Advanced search and filtering"]
