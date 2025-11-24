@@ -1010,8 +1010,9 @@ def parse_af_stdin() -> Dict[str, Any]:
     if hasattr(sys.stdin, 'buffer'):
         # Read raw bytes from buffer to check size before normalization
         try:
-            # Read all available bytes to check actual size
-            raw_bytes = sys.stdin.buffer.read()
+            # Read up to MAX_INPUT_SIZE + 1 bytes to detect oversize input
+            # without waiting for EOF on unlimited streams
+            raw_bytes = sys.stdin.buffer.read(MAX_INPUT_SIZE + 1)
             if len(raw_bytes) > MAX_INPUT_SIZE:
                 raise AFSizeError(
                     f"Input too large: exceeds {MAX_INPUT_SIZE} bytes (1MB) limit"

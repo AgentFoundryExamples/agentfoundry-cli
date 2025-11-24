@@ -71,6 +71,12 @@ af --help
 # Parse and validate an Agent Foundry file
 af run examples/example.af
 
+# Read from stdin
+cat config.af | af run -
+
+# Validate silently (for CI/CD)
+af validate examples/example.af
+
 # Say hello (example command)
 af hello
 
@@ -87,11 +93,23 @@ af run examples/example.af
 ```
 
 The command will:
-- Validate the file has a `.af` extension
+- Validate the file has a `.af` extension (or accept `-` for stdin)
 - Parse and validate the syntax and structure
 - Output canonical JSON with ordered keys to stdout
 - Exit with code 0 on success, non-zero on errors
 - Display human-readable error messages with filename and line numbers on stderr
+
+#### Reading from stdin
+
+Use `-` to read from stdin instead of a file:
+
+```bash
+# Pipe content directly
+echo 'purpose: "Test"...' | af run -
+
+# Pipe a file through stdin
+cat config.af | af run -
+```
 
 Example output:
 ```json
@@ -124,6 +142,26 @@ You can pipe the output to other tools like `jq`:
 ```bash
 af run examples/example.af | jq '.purpose'
 ```
+
+### Validating Files (CI/CD)
+
+The `af validate` command runs the same validation but suppresses stdout on success:
+
+```bash
+# Validate a file silently
+af validate config.af
+
+# Use in CI scripts
+af validate config.af && echo "Valid!"
+
+# Validate from stdin
+cat config.af | af validate -
+```
+
+Exit codes:
+- `0` - Valid: file parsed successfully
+- `1` - Invalid: validation failure
+- `2` - Usage error
 
 ### Alternative Invocation
 

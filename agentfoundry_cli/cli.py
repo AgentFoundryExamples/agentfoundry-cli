@@ -28,7 +28,7 @@ import json
 from typing import Optional
 from pathlib import Path
 from agentfoundry_cli import __version__
-from agentfoundry_cli.parser import parse_af_file, AFParseError
+from agentfoundry_cli.parser import parse_af_file, parse_af_stdin, AFParseError, AFSizeError
 
 # Canonical key order for JSON output
 CANONICAL_KEY_ORDER = ['purpose', 'vision', 'must', 'dont', 'nice']
@@ -61,14 +61,14 @@ def hello(
         typer.echo(f"Hello, {name}!")
     else:
         typer.echo("Hello from Agent Foundry CLI!")
-    typer.echo("\n[Upcoming Feature] 'af run' command will be available soon!")
+    typer.echo("\nUse 'af run <file>' to parse .af files, or 'af --help' for more commands.")
 
 
 @app.command()
 def run(
     file: str = typer.Argument(
         ...,
-        help="Path to the .af file to parse and validate",
+        help="Path to the .af file to parse and validate, or '-' to read from stdin",
         metavar="FILE"
     )
 ):
@@ -78,12 +78,20 @@ def run(
     Reads the specified .af file, validates its syntax and structure,
     and outputs the parsed configuration as canonical JSON to stdout.
     
-    Example:
+    Use '-' to read from stdin instead of a file.
+    
+    Examples:
         af run examples/example.af
+        cat example.af | af run -
+        echo '...' | af run -
     """
     try:
-        # Parse the file
-        result = parse_af_file(file)
+        if file == '-':
+            # Read from stdin
+            result = parse_af_stdin()
+        else:
+            # Parse the file
+            result = parse_af_file(file)
         
         # Create ordered JSON output with canonical key order
         ordered_output = {key: result[key] for key in CANONICAL_KEY_ORDER}
@@ -95,9 +103,61 @@ def run(
     except FileNotFoundError:
         typer.secho(f"Error: File not found: {file}", fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
+    except AFSizeError as e:
+        typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
     except AFParseError as e:
         typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
+    except Exception as e:
+        typer.secho(f"Unexpected error: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+
+
+@app.command()
+def validate(
+    file: str = typer.Argument(
+        ...,
+        help="Path to the .af file to validate, or '-' to read from stdin",
+        metavar="FILE"
+    )
+):
+    """
+    Validate an Agent Foundry (.af) file without output.
+    
+    Runs the same parser as 'af run' but suppresses stdout on success.
+    Errors are written to stderr. Exit code 0 indicates valid input,
+    non-zero indicates validation failure.
+    
+    Ideal for CI/CD pipelines where only the exit code matters.
+    
+    Examples:
+        af validate examples/example.af
+        cat example.af | af validate -
+        af validate config.af && echo "Valid!"
+    """
+    try:
+        if file == '-':
+            # Read from stdin
+            parse_af_stdin()
+        else:
+            # Parse the file
+            parse_af_file(file)
+        
+        # Success - exit silently with code 0
+        raise typer.Exit(0)
+        
+    except FileNotFoundError:
+        typer.secho(f"Error: File not found: {file}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+    except AFSizeError as e:
+        typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+    except AFParseError as e:
+        typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+    except typer.Exit:
+        raise
     except Exception as e:
         typer.secho(f"Unexpected error: {e}", fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
