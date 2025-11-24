@@ -196,15 +196,13 @@ def load_input(source: Optional[str] = None, stream: Optional[TextIO] = None) ->
     else:
         # Read from stream
         try:
-            # Read with size limit
+            # Read with size limit - try to read one byte more than the limit
+            # to detect if stream exceeds the limit
             content = stream.read(MAX_INPUT_SIZE + 1)
             if len(content) > MAX_INPUT_SIZE:
-                # Try to read one more byte to confirm we exceeded the limit
-                extra = stream.read(1)
-                if extra:
-                    raise AFSizeError(
-                        f"Input too large: exceeds {MAX_INPUT_SIZE} bytes (1MB) limit"
-                    )
+                raise AFSizeError(
+                    f"Input too large: exceeds {MAX_INPUT_SIZE} bytes (1MB) limit"
+                )
         except UnicodeDecodeError as e:
             raise AFParseError(f"Input must be UTF-8 encoded: {e}")
     

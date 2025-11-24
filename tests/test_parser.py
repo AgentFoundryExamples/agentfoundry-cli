@@ -38,6 +38,13 @@ from agentfoundry_cli.parser import (
 )
 
 
+# Test constants for size limit testing
+TEST_SIZE_SAFETY_MARGIN = 100  # Safety margin to stay under limit
+TEST_SIZE_SMALL_EXCESS = 1  # Small amount over limit for boundary testing
+TEST_SIZE_LARGE_EXCESS = 10000  # Large amount over limit for clear rejection
+TEST_SIZE_MEDIUM_EXCESS = 1000  # Medium amount over limit
+
+
 # Valid .af file content for testing
 VALID_AF_CONTENT = """
 purpose: "Build a task management system"
@@ -823,8 +830,8 @@ nice: ["Test"]
 """
     # Calculate how much padding we need
     base_size = len(base_content.encode('utf-8'))
-    # Leave room for the base content plus some safety margin
-    padding_size = MAX_INPUT_SIZE - base_size - 100
+    # Leave room for the base content plus safety margin
+    padding_size = MAX_INPUT_SIZE - base_size - TEST_SIZE_SAFETY_MARGIN
     padding = "# " + "x" * padding_size + "\n"
     
     content = padding + base_content
@@ -850,7 +857,7 @@ dont: ["Test"]
 nice: ["Test"]
 """
     # Create padding to reach 1MB
-    padding_size = MAX_INPUT_SIZE - len(base_content.encode('utf-8')) + 1
+    padding_size = MAX_INPUT_SIZE - len(base_content.encode('utf-8')) + TEST_SIZE_SMALL_EXCESS
     padding = "# " + "x" * padding_size + "\n"
     
     content = padding + base_content
@@ -879,7 +886,7 @@ dont: ["Test"]
 nice: ["Test"]
 """
     # Create padding significantly over 1MB
-    padding_size = MAX_INPUT_SIZE + 10000
+    padding_size = MAX_INPUT_SIZE + TEST_SIZE_LARGE_EXCESS
     padding = "# " + "x" * padding_size + "\n"
     
     content = padding + base_content
@@ -949,7 +956,7 @@ def test_stdin_size_limit():
     from agentfoundry_cli.parser import parse_af_stdin, MAX_INPUT_SIZE, AFSizeError
     
     # Create content larger than 1MB
-    padding_size = MAX_INPUT_SIZE + 1000
+    padding_size = MAX_INPUT_SIZE + TEST_SIZE_MEDIUM_EXCESS
     padding = "# " + "x" * padding_size + "\n"
     content = padding + """
 purpose: "Test"
@@ -978,7 +985,7 @@ def test_file_size_check_before_parse():
     # Create a large file
     with tempfile.NamedTemporaryFile(mode='w', suffix='.af', delete=False, encoding='utf-8') as f:
         # Write content larger than 1MB
-        padding_size = MAX_INPUT_SIZE + 1000
+        padding_size = MAX_INPUT_SIZE + TEST_SIZE_MEDIUM_EXCESS
         f.write("# " + "x" * padding_size + "\n")
         f.write(VALID_AF_CONTENT)
         temp_path = f.name
