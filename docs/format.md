@@ -6,6 +6,8 @@ This document describes the syntax and structure of Agent Foundry `.af` files us
 
 Agent Foundry files (`.af`) use a simple, human-readable format to define agent purpose, vision, and behavioral constraints. The format consists of key-value pairs where keys are case-insensitive and values are either quoted strings or lists of quoted strings.
 
+**Important**: Files must have the `.af` extension (case-insensitive). The parser will reject files without this extension to prevent accidentally processing incorrectly named or unintended files.
+
 ## File Structure
 
 An `.af` file must contain exactly five required keys:

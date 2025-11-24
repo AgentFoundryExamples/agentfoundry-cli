@@ -379,11 +379,18 @@ def parse_af_file(filepath: str) -> Dict[str, Any]:
         AFSyntaxError: For syntax errors
         AFEmptyValueError: When required values are empty
         FileNotFoundError: If file doesn't exist
+        ValueError: If file doesn't have .af extension
     """
     # Validate file exists
     path = Path(filepath)
     if not path.exists():
         raise FileNotFoundError(f"File not found: {filepath}")
+    
+    # Validate .af suffix (case-insensitive)
+    if path.suffix.lower() != '.af':
+        raise ValueError(
+            f"File must have .af extension, got: {path.suffix or '(no extension)'}"
+        )
     
     # Read file content
     try:

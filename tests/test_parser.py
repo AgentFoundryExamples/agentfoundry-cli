@@ -545,6 +545,55 @@ def test_parse_nonexistent_file():
         parse_af_file("/nonexistent/path/file.af")
 
 
+def test_parse_file_requires_af_extension():
+    """Test that parser rejects files without .af extension."""
+    # Create a file with .txt extension
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as f:
+        f.write(VALID_AF_CONTENT)
+        temp_path = f.name
+    
+    try:
+        with pytest.raises(ValueError) as exc_info:
+            parse_af_file(temp_path)
+        
+        assert ".af extension" in str(exc_info.value).lower()
+        assert ".txt" in str(exc_info.value)
+    finally:
+        os.unlink(temp_path)
+
+
+def test_parse_file_requires_extension():
+    """Test that parser rejects files with no extension."""
+    # Create a file with no extension
+    with tempfile.NamedTemporaryFile(mode='w', suffix='', delete=False, encoding='utf-8') as f:
+        f.write(VALID_AF_CONTENT)
+        temp_path = f.name
+    
+    try:
+        with pytest.raises(ValueError) as exc_info:
+            parse_af_file(temp_path)
+        
+        assert ".af extension" in str(exc_info.value).lower()
+    finally:
+        os.unlink(temp_path)
+
+
+def test_parse_file_accepts_uppercase_af_extension():
+    """Test that parser accepts .AF extension (case-insensitive)."""
+    # Create a file with .AF extension (uppercase)
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.AF', delete=False, encoding='utf-8') as f:
+        f.write(VALID_AF_CONTENT)
+        temp_path = f.name
+    
+    try:
+        result = parse_af_file(temp_path)
+        
+        assert result['purpose'] == "Build a task management system"
+        assert len(result) == 5
+    finally:
+        os.unlink(temp_path)
+
+
 def test_error_includes_filename():
     """Test that errors include filename in message."""
     content = """
