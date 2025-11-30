@@ -10,7 +10,7 @@ Total files: 8
 **Language:** Python  
 **Role:** module-init  
 **Role Justification:** module initialization file '__init__'  
-**Size:** 1.19 KB  
+**Size:** 1.07 KB  
 **LOC:** 8  
 **TODOs/FIXMEs:** 0  
 
@@ -18,7 +18,7 @@ Total files: 8
 **Language:** Python  
 **Role:** entry-point  
 **Role Justification:** common entry point name '__main__'  
-**Size:** 1.02 KB  
+**Size:** 0.90 KB  
 **LOC:** 6  
 **TODOs/FIXMEs:** 0  
 
@@ -26,7 +26,7 @@ Total files: 8
 **Language:** Python  
 **Role:** cli  
 **Role Justification:** CLI-related name 'cli'  
-**Size:** 6.76 KB  
+**Size:** 6.64 KB  
 **LOC:** 162  
 **TODOs/FIXMEs:** 0  
 **Declarations:** 6  
@@ -45,7 +45,7 @@ Total files: 8
 **Language:** Python  
 **Role:** implementation  
 **Role Justification:** general implementation file (default classification)  
-**Size:** 36.65 KB  
+**Size:** 36.53 KB  
 **LOC:** 744  
 **TODOs/FIXMEs:** 0  
 **Declarations:** 18  
@@ -69,7 +69,7 @@ Total files: 8
 **Language:** Python  
 **Role:** test  
 **Role Justification:** located in 'tests' directory  
-**Size:** 0.92 KB  
+**Size:** 0.80 KB  
 **LOC:** 1  
 **TODOs/FIXMEs:** 0  
 
@@ -77,7 +77,7 @@ Total files: 8
 **Language:** Python  
 **Role:** test  
 **Role Justification:** filename starts with 'test_'  
-**Size:** 3.89 KB  
+**Size:** 3.76 KB  
 **LOC:** 64  
 **TODOs/FIXMEs:** 0  
 **Declarations:** 10  
@@ -100,7 +100,7 @@ Total files: 8
 **Language:** Python  
 **Role:** test  
 **Role Justification:** filename starts with 'test_'  
-**Size:** 24.56 KB  
+**Size:** 24.44 KB  
 **LOC:** 468  
 **TODOs/FIXMEs:** 0  
 **Declarations:** 35  
@@ -124,7 +124,7 @@ Total files: 8
 **Language:** Python  
 **Role:** test  
 **Role Justification:** filename starts with 'test_'  
-**Size:** 49.46 KB  
+**Size:** 49.34 KB  
 **LOC:** 1308  
 **TODOs/FIXMEs:** 0  
 **Declarations:** 97  

@@ -9,7 +9,7 @@
       "role": "module-init",
       "role_justification": "module initialization file '__init__'",
       "metrics": {
-        "size_bytes": 1222,
+        "size_bytes": 1096,
         "loc": 8,
         "todo_count": 0
       },
@@ -32,7 +32,7 @@
       "role": "entry-point",
       "role_justification": "common entry point name '__main__'",
       "metrics": {
-        "size_bytes": 1047,
+        "size_bytes": 921,
         "loc": 6,
         "todo_count": 0
       },
@@ -55,7 +55,7 @@
       "role": "cli",
       "role_justification": "CLI-related name 'cli'",
       "metrics": {
-        "size_bytes": 6922,
+        "size_bytes": 6796,
         "loc": 162,
         "todo_count": 0,
         "declaration_count": 6
@@ -93,7 +93,7 @@
       "role": "implementation",
       "role_justification": "general implementation file (default classification)",
       "metrics": {
-        "size_bytes": 37533,
+        "size_bytes": 37407,
         "loc": 744,
         "todo_count": 0,
         "declaration_count": 18
@@ -149,7 +149,7 @@
       "role": "test",
       "role_justification": "located in 'tests' directory",
       "metrics": {
-        "size_bytes": 945,
+        "size_bytes": 819,
         "loc": 1,
         "todo_count": 0
       },
@@ -172,7 +172,7 @@
       "role": "test",
       "role_justification": "filename starts with 'test_'",
       "metrics": {
-        "size_bytes": 3981,
+        "size_bytes": 3855,
         "loc": 64,
         "todo_count": 0,
         "declaration_count": 10
@@ -211,7 +211,7 @@
       "role": "test",
       "role_justification": "filename starts with 'test_'",
       "metrics": {
-        "size_bytes": 25153,
+        "size_bytes": 25027,
         "loc": 468,
         "todo_count": 0,
         "declaration_count": 35
@@ -278,7 +278,7 @@
       "role": "test",
       "role_justification": "filename starts with 'test_'",
       "metrics": {
-        "size_bytes": 50646,
+        "size_bytes": 50520,
         "loc": 1308,
         "todo_count": 0,
         "declaration_count": 97
