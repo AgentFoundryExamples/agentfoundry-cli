@@ -1,4 +1,3 @@
-# ============================================================
 # SPDX-License-Identifier: GPL-3.0-or-later
 # This program was generated as part of the AgentFoundry project.
 # Copyright (C) 2025  John Brosnihan
@@ -15,5 +14,4 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# ============================================================
 """Tests for Agent Foundry CLI."""
