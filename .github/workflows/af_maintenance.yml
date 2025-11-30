@@ -29,9 +29,9 @@ jobs:
         run: |
           pip install "git+https://github.com/AgentFoundryExamples/repo-summarizer-v1.git@main"
 
-      # - name: Install license header CLI from GitHub
-      #   run: |
-      #     pip install "git+https://github.com/AgentFoundryExamples/license-header.git@main"
+      - name: Install license header CLI from GitHub
+        run: |
+          pip install "git+https://github.com/AgentFoundryExamples/license-header.git@main"
 
       - name: Write repo-analyzer config
         run: |
@@ -122,10 +122,10 @@ jobs:
           }
           EOF
 
-      # - name: Apply license headers
-      #   run: |
-      #     license-header apply \
-      #       --config .github/af-config/license-header.config.json
+      - name: Apply license headers
+        run: |
+          license-header apply \
+            --config .github/af-config/license-header.config.json
 
       - name: Run repo analyzer
         run: |
